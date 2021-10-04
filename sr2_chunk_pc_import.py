@@ -84,15 +84,16 @@ class SR2_Prop:
 
 def read_some_data(context, filepath, propvis):
     #filepath = "J:\Games\_Modding\SR2\\file\_wjork\sr2_chunk028_terminal.chunk_pc"
-    print()
-    print("Opening file: ", filepath)
-    print()
+    #print()
+    #print("Opening file: ", filepath)
+    #print()
     f = open(filepath, 'rb')
     
     
     # --- Header --- #
     f.seek(0)
-    chunk_pc_Header0            = f.read(20) # This is same in every file?
+    chunk_pc_Header0            = f.read(16) # This is same in every file?
+    chunk_pc_Header00           = f.read(4)  # an int?
     chunk_pc_Header1            = f.read(24) # Unknown
     chunk_pc_Header2            = f.read(8)  # null
     chunk_pc_Header3            = f.read(40) # Unknown
@@ -101,7 +102,7 @@ def read_some_data(context, filepath, propvis):
     chunk_pc_Header6            = f.read(4)  # null
     chunk_pc_Header5            = f.read(136)# Unknown
     
-    print("--- Header data ---")
+    #print("--- Header data ---")
 
 
     # --- Texture List --- #
@@ -115,9 +116,9 @@ def read_some_data(context, filepath, propvis):
     for i in range (chunk_pc_TexCount):
         chunk_pc_TexList.append(read_cstr(f))
     
-    print("Textures Count:         ", chunk_pc_TexCount)
-    print("Tex List Length Verify: ", len(chunk_pc_TexList))
-    print()
+    #print("Textures Count:         ", chunk_pc_TexCount)
+    #print("Tex List Length Verify: ", len(chunk_pc_TexList))
+    #print()
     
     SeekToNextRow(f)
     
@@ -129,11 +130,11 @@ def read_some_data(context, filepath, propvis):
     chunk_pc_UnknownCount1      = read_uint(f, '<')
     chunk_pc_UnknownCount2      = read_uint(f, '<')
     
-    print("Unknown Count0:         ", chunk_pc_UnknownCount0)
-    print("PropCount:              ", chunk_pc_PropCount)
-    print("Unknown Count1:         ", chunk_pc_UnknownCount1)
-    print("Unknown Count2:         ", chunk_pc_UnknownCount2)
-    print()
+    #print("Unknown Count0:         ", chunk_pc_UnknownCount0)
+    #print("PropCount:              ", chunk_pc_PropCount)
+    #print("Unknown Count1:         ", chunk_pc_UnknownCount1)
+    #print("Unknown Count2:         ", chunk_pc_UnknownCount2)
+    #print()
     
     # filler
     f.seek(16,os.SEEK_CUR)
@@ -145,7 +146,6 @@ def read_some_data(context, filepath, propvis):
         _temp = f.read(24)
     SeekToNextRow(f)
     
-    print(hex(f.tell()))
     # --- Props --- #
     Props = []
     for i in range (chunk_pc_PropCount):
@@ -228,7 +228,6 @@ class ImportSomeData(Operator, ImportHelper):
     )
 
     def execute(self, context):
-        print(self.type)
         if self.type == 'FILE':
             return read_some_data(context, self.filepath, self.propvis)
         else:
