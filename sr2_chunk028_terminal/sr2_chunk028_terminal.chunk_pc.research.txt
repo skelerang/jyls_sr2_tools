@@ -1,3 +1,5 @@
+chunks1.vpp_pc/sr2_chunk028_terminal.chunk_pc
+
 Header
 
 0x0 - First 20 bytes seem to be the same in every file:
@@ -9,12 +11,10 @@ Header
 
 
 0x100
-90 02 00 00 - int: 656 (see just below)
+90 02 00 00 - int: 656
+00 00 00 00 - repeats 656 times
+0x00000B44 - texture names, 656 of them.
 
-0x104
-00 00 00 00 -   repeat these 4 bytes 656 times
-
-0x00000B44 - texture names?
 
 0x00003B40 - We have some interesting numbers here
 
