@@ -2,18 +2,20 @@ chunks1.vpp_pc/sr2_chunk028_terminal.chunk_pc
 
 Header
 
-0x0 - First 20 bytes seem to be the same in every file:
-12 CA CA BB 
-79 00 00 00
-0E 00 00 00
-00 00 00 00
-0E 00 00 00
+0x0 - First bytes seem to be the same in every file:
+12 CA CA BB  79 00 00 00  0E 00 00 00 
+
+0xB
+00 00 00 00 - int: 0 (this is zero every file except for sr2_meshlibrary.chunk_pc, which says 2)
+
+0x10
+0E 00 00 00 - int: 14 (this seems to be 30 or lower in every file)
 
 
 0x100
 90 02 00 00 - int: 656
 00 00 00 00 - repeats 656 times
-0x00000B44 - texture names, 656 of them.
+0x00000B44  - texture names, 656 of them.
 
 
 0x00003B40 - We have some interesting numbers here

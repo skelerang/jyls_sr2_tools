@@ -92,8 +92,9 @@ def read_some_data(context, filepath, propvis):
     
     # --- Header --- #
     f.seek(0)
-    chunk_pc_Header0            = f.read(16) # This is same in every file?
-    chunk_pc_Header00           = f.read(4)  # an int?
+    chunk_pc_Header0            = f.read(12) # This is same in every file?
+    chunk_pc_HeaderB            = read_uint(f, '<')  # int: zero every file except for sr2_meshlibrary.chunk_pc, which says 2
+    chunk_pc_HeaderC            = read_uint(f, '<')  # an int? this seems to be 30 or lower in every file
     chunk_pc_Header1            = f.read(24) # Unknown
     chunk_pc_Header2            = f.read(8)  # null
     chunk_pc_Header3            = f.read(40) # Unknown
@@ -101,7 +102,6 @@ def read_some_data(context, filepath, propvis):
     chunk_pc_Header5            = f.read(20) # Unknown
     chunk_pc_Header6            = f.read(4)  # null
     chunk_pc_Header5            = f.read(136)# Unknown
-    
     #print("--- Header data ---")
 
 
