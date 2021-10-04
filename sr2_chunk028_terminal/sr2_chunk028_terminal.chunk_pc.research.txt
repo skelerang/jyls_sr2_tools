@@ -26,10 +26,14 @@ Header
 0x0000A000  -   Map objects: 96 bytes long, 2080 of them
 
 0x0003AC00  -   Pattern: looks like a 100 bytes pattern, ending with 4 null bytes. repeats 151 times.
+Contains lots of sensible floats.
+
+
 0x0003E830  -   Filler
 0x0006E7F8  -   Unknown
 
 0x0006EA3C  -   Unknown 20 bytes pattern 113 times.
+
 
 
 0x000B5450  -   This is interesting
