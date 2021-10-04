@@ -1,0 +1,42 @@
+Header
+
+0x0 - First 20 bytes seem to be the same in every file:
+12 CA CA BB 
+79 00 00 00
+0E 00 00 00
+00 00 00 00
+0E 00 00 00
+
+
+0x100
+90 02 00 00 - int: 656 (see just below)
+
+0x104
+00 00 00 00 -   repeat these 4 bytes 656 times
+
+0x00000B44 - texture names?
+
+0x00003B40 - We have some interesting numbers here
+
+31 04 00 00 -   int: 1073 (see 0x00003B60, unknown)
+20 08 00 00 -   int: 2080 (see 0x0000A000, map objects)
+71 00 00 00 -   int: 113  (see 0x0006EA3C, unknown pattern)
+97 00 00 00 -   int: 151 ???
+
+0x00003B60  -   24 byte pattern repeats 1073 times (with variation). No clue what they are.
+
+0x0000A000  -   Map objects: 96 bytes long, 2080 of them
+
+0x0003AC00  -   Unknown
+0x0003E830  -   Filler
+0x0006E7F8  -   Unknown
+
+0x0006EA3C  -   Unknown 20 bytes pattern 113 times.
+
+
+0x000B5450  -   This is interesting
+
+
+0x0012F930  -   prop names? 1950 of them I think
+
+0x00138B90  -   ??
