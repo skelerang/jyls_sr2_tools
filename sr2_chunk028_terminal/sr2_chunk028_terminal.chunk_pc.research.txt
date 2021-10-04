@@ -2,14 +2,10 @@ chunks1.vpp_pc/sr2_chunk028_terminal.chunk_pc
 
 Header
 
-0x0 - First bytes seem to be the same in every file:
-12 CA CA BB  79 00 00 00  0E 00 00 00 
+0x00000000 - 12 CA CA BB  79 00 00 00  0E 00 00 00 - First bytes seem to be the same in every file, but haven't checked
+0x0000000B - 00 00 00 00 - int: 0 (this is zero every file except for sr2_meshlibrary.chunk_pc, which says 2)
 
-0xB
-00 00 00 00 - int: 0 (this is zero every file except for sr2_meshlibrary.chunk_pc, which says 2)
-
-0x10
-0E 00 00 00 - int: 14 (this seems to be 30 or lower in every file)
+0x00000010 - 0E 00 00 00 - int: 14 (this seems to be 30 or lower in every file)
 
 
 0x100
@@ -23,13 +19,13 @@ Header
 31 04 00 00 -   int: 1073 (see 0x00003B60, unknown)
 20 08 00 00 -   int: 2080 (see 0x0000A000, map objects)
 71 00 00 00 -   int: 113  (see 0x0006EA3C, unknown pattern)
-97 00 00 00 -   int: 151 ???
+97 00 00 00 -   int: 151  (see 0x0003AC00, unknown pattern)
 
 0x00003B60  -   24 byte pattern repeats 1073 times (with variation). No clue what they are.
 
 0x0000A000  -   Map objects: 96 bytes long, 2080 of them
 
-0x0003AC00  -   Unknown
+0x0003AC00  -   Pattern: looks like a 100 bytes pattern, ending with 4 null bytes. repeats 151 times.
 0x0003E830  -   Filler
 0x0006E7F8  -   Unknown
 
