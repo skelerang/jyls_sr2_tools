@@ -167,7 +167,7 @@ def read_some_data(context, filepath, propvis):
     class SR2_Prop1:
         Pos = []
 
-    do_prop1 = True # Only works for sr2_chunk028_terminal.chunk_pc, see below
+    do_prop1 = False # Only works for sr2_chunk028_terminal.chunk_pc, see below
 
     if (do_prop1):
         chunk_pc_Prop1Count = 1944          # <-- Figure out these if you wanna open another file
