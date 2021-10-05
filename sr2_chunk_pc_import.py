@@ -64,13 +64,13 @@ def SeekToNextRow(f):
 
     offset = f.tell()
     # check if we're already at the beginning of the next row
-    if offset & 65520 == offset:
+    if offset & 4294967280 == offset:
         pass
     else:
         # Add 16 to get to next row
         offset += 16
         # Zero 4 least significant bits to get to beginning of this row
-        offset = offset & 65520
+        offset = offset & 4294967280
         f.seek(offset)
 
     
