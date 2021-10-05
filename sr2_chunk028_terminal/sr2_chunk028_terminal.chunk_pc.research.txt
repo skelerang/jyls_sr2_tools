@@ -16,10 +16,10 @@ chunks1.vpp_pc/sr2_chunk028_terminal.chunk_pc
 
 # --- Numbers --- #
 0x00003B40
-31 04 00 00 -   int: 1073 (see 0x00003B60, Unknown Pattern 0)
-20 08 00 00 -   int: 2080 (see 0x0000A000, map objects)
-71 00 00 00 -   int: 113  (see 0x0006EA3C??, Unknown Pattern 1??)
-97 00 00 00 -   int: 151  (see 0x0003AC00, Unknown Pattern 2)
+31 04 00 00 -   int: 1073 (see 0x00003B60,  Unknown Pattern 0)
+20 08 00 00 -   int: 2080 (see 0x0000A000,  Prop Data 0)
+71 00 00 00 -   int: 113  (see 0x0006EA3C?, Unknown Pattern 1?)
+97 00 00 00 -   int: 151  (see 0x0003AC00,  Unknown Pattern 2)
 
 
 # --- Unknown Pattern 0 --- #
@@ -39,12 +39,13 @@ D8 D2 CD 44 -   float: 1646.5889    Pos Z
 # --- Unknown Pattern 2 --- #
 0x0003AC00  -   Pattern: looks like a 100 bytes pattern, ending with 4 null bytes. repeats 151 times.
 Contains lots of floats? Corrupting this whole section made no visible difference.
+
 0x0003E700  -   Unknown, more floats
 0x0003E830  -   Filler
 0x0006E7F8  -   Unknown
 0x0006E8A0  -   Unknown
 
-
+# --- Unknown Pattern 1? --- #
 0x0006EA3C  -   Unknown 20 bytes pattern 113 times. Changes crash the game when chunk is loaded.
 0x0006F380  -   Unknown 16 byte pattern 6 times
 0x0006F310  -   Unknown 16 byte pattern 113 times. Changes crash the game when chunk is loaded.
