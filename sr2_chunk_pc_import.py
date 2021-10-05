@@ -123,7 +123,7 @@ def read_some_data(context, filepath, propvis):
     SeekToNextRow(f)
     
     
-    # --- More numbers --- #
+    # --- Numbers --- #
     
     chunk_pc_UnknownCount0      = read_uint(f, '<')
     chunk_pc_PropCount          = read_uint(f, '<')
@@ -140,13 +140,13 @@ def read_some_data(context, filepath, propvis):
     f.seek(16,os.SEEK_CUR)
     
     
-    # --- Unknown0 --- #
+    # --- Unknown Pattern 0 --- #
     Unknown0 = []
     for i in range (chunk_pc_UnknownCount0):
         _temp = f.read(24)
     SeekToNextRow(f)
     
-    
+
     # --- Prop Data 0 --- #
     Props = []
     for i in range (chunk_pc_PropCount):
