@@ -167,7 +167,7 @@ def read_some_data(context, filepath, propvis):
     class SR2_Prop1:
         Pos = []
 
-    do_prop1 = False # Only works for sr2_chunk028_terminal.chunk_pc, see below
+    do_prop1 = True # Only works for sr2_chunk028_terminal.chunk_pc, see below
 
     if (do_prop1):
         chunk_pc_Prop1Count = 1944          # <-- Figure out these if you wanna open another file
@@ -184,6 +184,12 @@ def read_some_data(context, filepath, propvis):
             prop1.Pos = [X, Y, Z]
             f.seek(68,os.SEEK_CUR)
             SR2_Prop1_List.append(prop1)
+        propnames = []
+        for i in range(chunk_pc_Prop1Count):
+            propname = read_cstr(f)
+            propnames.append(propname)
+            print(propname)
+        print(len(propnames))
 
 
     # --- Prop Visualization --- #
@@ -208,25 +214,23 @@ def read_some_data(context, filepath, propvis):
     
     
     # --- Prop 1 Visualization --- #
-    # Create a mesh with vertices in place of any prop.
     if(do_prop1):
-        vertices = []
-        edges = []
-        faces = []      
-        
-        for i in range (chunk_pc_Prop1Count):
-            vertices.append([ SR2_Prop1_List[i].Pos[0], SR2_Prop1_List[i].Pos[1], SR2_Prop1_List[i].Pos[2] ])  
 
-        new_mesh = bpy.data.meshes.new('prop1 visualization')
-        new_mesh.from_pydata(vertices, edges, faces)
-        new_mesh.update()
-        # make object from mesh
-        new_object = bpy.data.objects.new('Prop1 Visualization', new_mesh)
         # make collection
         new_collection = bpy.data.collections.new(os.path.basename(filepath) + "_1")
         bpy.context.scene.collection.children.link(new_collection)
-        # add object to scene collection
-        new_collection.objects.link(new_object)
+
+        for i in range (chunk_pc_Prop1Count):
+            vert = [[ SR2_Prop1_List[i].Pos[0], SR2_Prop1_List[i].Pos[1], SR2_Prop1_List[i].Pos[2] ]] 
+
+            new_mesh = bpy.data.meshes.new('mesh')
+            new_mesh.from_pydata(vert, [], [])
+            new_mesh.update()
+            # make object from mesh
+            new_object = bpy.data.objects.new(propnames[i], new_mesh)
+
+            # add object to scene collection
+            new_collection.objects.link(new_object)
     
 
     return {'FINISHED'}
