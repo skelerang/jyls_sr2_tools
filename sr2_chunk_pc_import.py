@@ -192,6 +192,34 @@ def read_some_data(context, filepath, propvis):
         print(len(propnames))
 
 
+    unknown4offset = 0x00143100
+    unknown4count = 263
+    do_unk4 = False
+
+
+    class unknown4:
+        Pos0 = []
+        Pos1 = []
+    unknown4List = []
+    if(do_unk4):
+        f.seek(unknown4offset)
+        for i in range (unknown4count):
+            unk = unknown4()
+            X = read_float(f, '<')
+            Z = read_float(f, '<')
+            Y = read_float(f, '<')
+            unk.Pos0 = [X, Y, Z]
+            f.read(4)
+            X = read_float(f, '<')
+            Z = read_float(f, '<')
+            Y = read_float(f, '<')
+            unk.Pos1 = [X, Y, Z]
+            f.read(20)
+            unknown4List.append(unk)
+
+
+
+
     # --- Prop Visualization --- #
     # Create a mesh with vertices in place of any prop.
     if(propvis):
@@ -211,8 +239,8 @@ def read_some_data(context, filepath, propvis):
         bpy.context.scene.collection.children.link(new_collection)
         # add object to scene collection
         new_collection.objects.link(new_object)
-    
-    
+
+
     # --- Prop 1 Visualization --- #
     if(do_prop1):
 
@@ -231,7 +259,26 @@ def read_some_data(context, filepath, propvis):
 
             # add object to scene collection
             new_collection.objects.link(new_object)
+
     
+    # --- Unknown 4 Visualization --- #
+    if(do_unk4):
+        new_collection = bpy.data.collections.new(os.path.basename(filepath) + "_unk4")
+        bpy.context.scene.collection.children.link(new_collection)
+        for i in range (unknown4count):
+            verts = []
+            verts.append([ unknown4List[i].Pos0[0], unknown4List[i].Pos0[1], unknown4List[i].Pos0[2] ])
+            verts.append([ unknown4List[i].Pos1[0], unknown4List[i].Pos1[1], unknown4List[i].Pos1[2] ])
+
+
+            new_mesh = bpy.data.meshes.new('mesh')
+            new_mesh.from_pydata(verts, [], [])
+            new_mesh.update()
+            # make object from mesh
+            new_object = bpy.data.objects.new('unknown4', new_mesh)
+
+            # add object to scene collection
+            new_collection.objects.link(new_object)
 
     return {'FINISHED'}
 
