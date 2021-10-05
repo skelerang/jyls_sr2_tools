@@ -146,7 +146,8 @@ def read_some_data(context, filepath, propvis):
         _temp = f.read(24)
     SeekToNextRow(f)
     
-    # --- Props --- #
+    
+    # --- Prop Data 0 --- #
     Props = []
     for i in range (chunk_pc_PropCount):
         prop = SR2_Prop()
@@ -160,12 +161,6 @@ def read_some_data(context, filepath, propvis):
         prop.Model_Destroyed = read_uint(f, '<')
         prop.Unknown2 = read_uint(f, '<')
         Props.append(prop)
-    
-    chunk_pc_MaybeThisIsVerts   = 0x13F320
-    chunk_pc_MaybeThisIsVerts2  = 0x16e4a0
-    
-    chunk_pc_PropNamesOffset    = 0x0012F930
-    chunk_pc_PropNamesLength    = 0x9260
     
 
     # --- Prop Visualization --- #
