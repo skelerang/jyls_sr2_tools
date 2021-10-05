@@ -18,7 +18,7 @@ chunks1.vpp_pc/sr2_chunk028_terminal.chunk_pc
 0x00003B40
 31 04 00 00 -   int: 1073 (see 0x00003B60,  Unknown Pattern 0)
 20 08 00 00 -   int: 2080 (see 0x0000A000,  Prop Data 0)
-71 00 00 00 -   int: 113  (see 0x0006EA3C?, Unknown Pattern 1?)
+71 00 00 00 -   int: 113  (number of models in file?)
 97 00 00 00 -   int: 151  (see 0x0003AC00,  Unknown Pattern 2)
 
 
@@ -42,14 +42,22 @@ Contains lots of floats? Corrupting this whole section made no visible differenc
 
 0x0003E700  -   Unknown, more floats
 0x0003E830  -   Filler
+
+
+# --- Mesh header? --- #
 0x0006E7F8  -   Unknown
 0x0006E8A0  -   Unknown
 
+0x0006EA3C  -   Unknown 20 bytes pattern 113 times.
+0x0006F380  -   Unknown 16 byte pattern 7 times
+0x0006F310  -   Unknown 16 byte pattern 112 times.
 
-# --- Unknown Pattern 1? --- #
-0x0006EA3C  -   Unknown 20 bytes pattern 113 times. Changes crash the game when chunk is loaded.
-0x0006F380  -   Unknown 16 byte pattern 6 times
-0x0006F310  -   Unknown 16 byte pattern 113 times. Changes crash the game when chunk is loaded.
+
+# --- Mesh data --- #
+0x0006FA90  -   Model geometry. Lots of props.
+float,float,float * 78  -   PosXYZ * vertex count
+short * 164             -   index * face count?
+
 
 
 # --- Texture stuff? --- # 
@@ -73,7 +81,19 @@ AA 9E CD 44 -   float: 1644.9583    Pos Z
 64B of unknown
 
 
-# --- Prop Names? --- #
+# --- Prop Names --- #
 0x0012F930  -   1944 null terminated strings. Most likely names for prop list just above.
+0x001386F0
+9E 04 00 00 -   int? 1182?
+0x001386F0  -   57 prop name looking strings terminated with either 2 or 3 null bytes, whichever ends at an even byte.
+0x00138B90  -   32B zeros
 
-0x00138B90  -   ??
+
+# --- More unknown --- #
+0x00138BB0
+C0 3C 00 00
+0x00138BB4  -   26 476 bytes of CD
+
+
+# --- More unknown --- #
+0x13F320 - Unknown floats
