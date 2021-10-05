@@ -45,15 +45,35 @@ Contains lots of floats? Corrupting this whole section made no visible differenc
 0x0006E7F8  -   Unknown
 0x0006E8A0  -   Unknown
 
+
 # --- Unknown Pattern 1? --- #
 0x0006EA3C  -   Unknown 20 bytes pattern 113 times. Changes crash the game when chunk is loaded.
 0x0006F380  -   Unknown 16 byte pattern 6 times
 0x0006F310  -   Unknown 16 byte pattern 113 times. Changes crash the game when chunk is loaded.
 
 
+# --- Texture stuff? --- # 
+0x0009A164  -   24 byte pattern 656 times
+
+0x000A0E90  -   128 byte pattern 650? times
+
+
+
 0x000B5450  -   This is interesting
 
+0x000EDD70
 
-0x0012F930  -   prop names? 1950 of them I think
+
+# --- Prop Data 1 --- #
+0x001099B0  -   More prop data? 80B pattern 1944 times
+46 7F 06 44 -   float: 537.98865    Pos X
+F8 36 74 40 -   float: 3.815855     Pos Y
+AA 9E CD 44 -   float: 1644.9583    Pos Z
+00 00 00 00
+64B of unknown
+
+
+# --- Prop Names? --- #
+0x0012F930  -   prop names? around 1950 of them I think
 
 0x00138B90  -   ??

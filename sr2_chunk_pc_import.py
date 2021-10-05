@@ -163,6 +163,29 @@ def read_some_data(context, filepath, propvis):
         Props.append(prop)
     
 
+    # --- Prop Data 1 (maybe) --- #
+    class SR2_Prop1:
+        Pos = []
+
+    do_prop1 = False # Only works for sr2_chunk028_terminal.chunk_pc, see below
+
+    if (do_prop1):
+        chunk_pc_Prop1Count = 1944          # <-- Figure out these if you wanna open another file
+        chunk_pc_Prop1Offset = 0x001099b0   # <--
+        
+        f.seek(chunk_pc_Prop1Offset)
+        SR2_Prop1_List = []
+        for i in range(chunk_pc_Prop1Count):
+            prop1 = SR2_Prop1()
+            
+            X = read_float(f, '<')
+            Z = read_float(f, '<')
+            Y = read_float(f, '<')
+            prop1.Pos = [X, Y, Z]
+            f.seek(68,os.SEEK_CUR)
+            SR2_Prop1_List.append(prop1)
+
+
     # --- Prop Visualization --- #
     # Create a mesh with vertices in place of any prop.
     if(propvis):
@@ -170,8 +193,8 @@ def read_some_data(context, filepath, propvis):
         edges = []
         faces = []  
         for i in range (chunk_pc_PropCount):
-            vertices.append([ Props[i].Pos[0], Props[i].Pos[1], Props[i].Pos[2] ])        
-        
+            vertices.append([ Props[i].Pos[0], Props[i].Pos[1], Props[i].Pos[2] ]) 
+
         new_mesh = bpy.data.meshes.new('prop visualization')
         new_mesh.from_pydata(vertices, edges, faces)
         new_mesh.update()
@@ -183,6 +206,29 @@ def read_some_data(context, filepath, propvis):
         # add object to scene collection
         new_collection.objects.link(new_object)
     
+    
+    # --- Prop 1 Visualization --- #
+    # Create a mesh with vertices in place of any prop.
+    if(do_prop1):
+        vertices = []
+        edges = []
+        faces = []      
+        
+        for i in range (chunk_pc_Prop1Count):
+            vertices.append([ SR2_Prop1_List[i].Pos[0], SR2_Prop1_List[i].Pos[1], SR2_Prop1_List[i].Pos[2] ])  
+
+        new_mesh = bpy.data.meshes.new('prop1 visualization')
+        new_mesh.from_pydata(vertices, edges, faces)
+        new_mesh.update()
+        # make object from mesh
+        new_object = bpy.data.objects.new('Prop1 Visualization', new_mesh)
+        # make collection
+        new_collection = bpy.data.collections.new(os.path.basename(filepath) + "_1")
+        bpy.context.scene.collection.children.link(new_collection)
+        # add object to scene collection
+        new_collection.objects.link(new_object)
+    
+
     return {'FINISHED'}
 
 from bpy_extras.io_utils import ImportHelper
