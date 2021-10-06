@@ -236,7 +236,6 @@ def read_some_data(context, filepath, ImportProps, ImportMesh):
     SR2_Prop1_List = []
 
     do_prop1 = False # Only works for sr2_chunk028_terminal.chunk_pc, see below
-    ImportProps = False
 
     if (do_prop1):
         chunk_pc_Prop1Count = 1944          # <-- Figure out these if you wanna open another file
