@@ -81,10 +81,45 @@ class SR2_Prop:
     Model_Destroyed: int    # Sets the model loaded when prop is destroyed
     Unknown2: int
 
+class SR2_chunk_pc_mesh:
+    vertCount: int
+    indexCount: int
+    vertices = []
+    faces = []
+    unknown0: int
+    unknown1: int
 
-def read_some_data(context, filepath, propvis):
+def chunk_pc_mesh_vertices(f, count):
+    vertices = []
+    for ii in range(count):
+        X = read_float(f, '<')
+        Z = read_float(f, '<')
+        Y = read_float(f, '<')
+        vertices.append([X, Y, Z])
+    return(vertices)
+
+def chunk_pc_mesh_faces(f, count):
+    faces = []
+    for i in range (count-2):
+        face = [read_short(f, '<'),read_short(f, '<'),read_short(f, '<')]
+        if(i < count-3):
+            f.seek(-4,os.SEEK_CUR)
+        faces.append(face)
+    return(faces)
+
+def import_meshes(Meshes):
+    new_collection = bpy.data.collections.new('sr2_meshes')
+    bpy.context.scene.collection.children.link(new_collection)
+    for sr2_mesh in Meshes:
+        new_mesh = bpy.data.meshes.new('mesh')
+        new_mesh.from_pydata(sr2_mesh.vertices, [], sr2_mesh.faces)
+        new_mesh.update()
+        new_object = bpy.data.objects.new('object', new_mesh)
+        new_collection.objects.link(new_object)
+
+def read_some_data(context, filepath, ImportProps, ImportMesh):
     #filepath = "J:\Games\_Modding\SR2\\file\_wjork\sr2_chunk028_terminal.chunk_pc"
-    #print()
+    print()
     #print("Opening file: ", filepath)
     #print()
     f = open(filepath, 'rb')
@@ -163,18 +198,52 @@ def read_some_data(context, filepath, propvis):
         Props.append(prop)
     
 
+    # --- Meshes --- #
+    chunk_pc_MeshHeaderOffset = 0x0006EA50
+    chunk_pc_MeshCount = 112
+    Meshes = []
+
+    if(ImportMesh):
+
+        # --- Mesh Header --- #
+        f.seek(chunk_pc_MeshHeaderOffset)
+        for i in range(chunk_pc_MeshCount):
+            mesh = SR2_chunk_pc_mesh()
+            f.read(4)   # null bytes
+            mesh.unknown0 = read_uint(f, '<')
+            mesh.indexCount = read_uint(f, '<')
+            f.read(8)   # FF bytes
+            Meshes.append(mesh)
+        f.read(112) # skip unknown data
+        for mesh in Meshes:
+            f.read(4)   # null bytes
+            mesh.unknown1 = read_uint(f, '<')
+            mesh.vertCount = read_uint(f, '<')
+            f.read(4)   # FF bytes
+        f.read(16)  # null bytes
+
+        # --- Mesh Data --- #
+        for mesh in Meshes:
+            mesh.vertices = chunk_pc_mesh_vertices(f, mesh.vertCount)
+            SeekToNextRow(f)
+            mesh.faces = chunk_pc_mesh_faces(f, mesh.indexCount)
+            SeekToNextRow(f)
+
+
     # --- Prop Data 1 (maybe) --- #
     class SR2_Prop1:
         Pos = []
+    SR2_Prop1_List = []
 
     do_prop1 = False # Only works for sr2_chunk028_terminal.chunk_pc, see below
+    ImportProps = False
 
     if (do_prop1):
         chunk_pc_Prop1Count = 1944          # <-- Figure out these if you wanna open another file
         chunk_pc_Prop1Offset = 0x001099b0   # <--
         
         f.seek(chunk_pc_Prop1Offset)
-        SR2_Prop1_List = []
+        
         for i in range(chunk_pc_Prop1Count):
             prop1 = SR2_Prop1()
             
@@ -188,8 +257,21 @@ def read_some_data(context, filepath, propvis):
         for i in range(chunk_pc_Prop1Count):
             propname = read_cstr(f)
             propnames.append(propname)
-            print(propname)
-        print(len(propnames))
+        SeekToNextRow(f)
+
+        f.read(4)
+
+        
+        propnames2 = []
+        print("-----------------")
+        for i in range(67):
+            name = ""
+            # These strings are terminated with 2 or 3 null bytes for some reason
+            for ii in range (3):
+                name = read_cstr(f)
+                if len(name) != 0:
+                    break
+            print(name)
 
 
     unknown4offset = 0x00143100
@@ -219,10 +301,13 @@ def read_some_data(context, filepath, propvis):
 
 
 
+    # --- Import Meshes --- #
+    if(ImportMesh): import_meshes(Meshes)
+    
 
     # --- Prop Visualization --- #
     # Create a mesh with vertices in place of any prop.
-    if(propvis):
+    if(ImportProps):
         vertices = []
         edges = []
         faces = []  
@@ -303,10 +388,16 @@ class ImportSomeData(Operator, ImportHelper):
 
     # List of operator properties, the attributes will be assigned
     # to the class instance from the operator settings before calling.
-    propvis: BoolProperty(
+    ImportProps: BoolProperty(
         name="Prop Visualization",
         description="Create a mesh with vertices at prop positions",
-        default=True,
+        default=False,
+    )
+
+    ImportMesh: BoolProperty(
+        name="Import Meshes",
+        description="Only works with sr2_chunk028_terminal!!!",
+        default=False,
     )
 
     type: EnumProperty(
@@ -321,13 +412,13 @@ class ImportSomeData(Operator, ImportHelper):
 
     def execute(self, context):
         if self.type == 'FILE':
-            return read_some_data(context, self.filepath, self.propvis)
+            return read_some_data(context, self.filepath, self.ImportProps, self.ImportMesh)
         else:
             dirname = os.path.dirname(self.filepath)
             files = sorted(os.listdir(dirname))
             chunks = [item for item in files if item.endswith('.chunk_pc')]
             for chunk in chunks:
-                read_some_data(context, dirname + '\\' + chunk, self.propvis)
+                read_some_data(context, dirname + '\\' + chunk, self.ImportProps, self.ImportMesh)
         return {'FINISHED'} 
 
 
