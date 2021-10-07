@@ -117,6 +117,13 @@ def import_meshes(Meshes):
         new_object = bpy.data.objects.new('object', new_mesh)
         new_collection.objects.link(new_object)
 
+def chunk_pc_mesh2_faces(f, count):
+    faces = []
+    for i in range (count):
+        face = [read_short(f, '<'),read_short(f, '<'),read_short(f, '<')]
+        faces.append(face)
+    return(faces)
+
 def read_some_data(context, filepath, ImportProps, ImportMesh):
     #filepath = "J:\Games\_Modding\SR2\\file\_wjork\sr2_chunk028_terminal.chunk_pc"
     print()
@@ -299,6 +306,100 @@ def read_some_data(context, filepath, ImportProps, ImportMesh):
             unknown4List.append(unk)
 
 
+    # --- Mesh Data 1 --- #
+    mesh2_offset = 0x00147fe0
+    #mesh2_offset = 0x00148bf8
+    #mesh2_offset = 0x0014a108
+    mesh2_count = 25
+
+    ImportTempMesh = False
+
+    def chunk_pc_mesh2():
+        ImportTempMesh = False
+        #ImportTempMesh = True
+
+        class chunk_pc_mesh2():
+            unknown0: int
+            unknown1: int
+            unknown2: int
+            unknown3: int
+            bytes0: bytearray
+            bytes1: bytearray
+            meshcount: int
+            meshpos = []
+            vertcount: int
+            facecount: int
+            vertices = []
+            faces = []
+            unknowncount1: int
+            unknowncount2: int
+        _mesh = chunk_pc_mesh2()
+        
+        print('enter: ', hex(f.tell()))
+
+        _mesh.unknown0 = read_uint(f, '<')      # 0x0000 from mesh start
+        _mesh.meshcount = read_uint(f, '<')     # 0x0004
+        _mesh.bytes0 = f.read(28)               # 0x0008
+        _mesh.unknown1 = read_uint(f, '<')      # 0x0024
+
+        #print('', hex(f.tell()))
+        #print('mesh.unknown0:       ', _mesh.unknown0)
+        #print('mesh.meshcount:      ', _mesh.meshcount)
+        #print('mesh.unknown1:       ', _mesh.unknown1)
+
+        if _mesh.unknown1 == 2:
+            for i in range (_mesh.meshcount):
+                _mesh.meshpos.append([0,0,0])
+
+        elif _mesh.unknown1 == 0:
+            f.read(28)
+            for i in range (_mesh.meshcount):
+                X = read_float(f, '<')
+                Z = read_float(f, '<')
+                Y = read_float(f, '<')
+                _mesh.meshpos.append([X, Y, Z])
+        else:
+            print("eror: _mesh.unknown1 == ", _mesh.unknown1 )
+
+        print('verts offset:        ', hex(f.tell()))
+        for _i in range(_mesh.meshcount):
+            _mesh.vertcount = read_uint(f, '<')
+            for i in range(_mesh.vertcount):
+                X = read_float(f, '<')  # + _mesh.meshpos[j][0]
+                Z = read_float(f, '<')  # + _mesh.meshpos[j][1]
+                Y = read_float(f, '<')  # + _mesh.meshpos[j][2]
+                _mesh.vertices.append([X, Y, Z])
+            
+            if _mesh.unknown1 != 0:    
+                _mesh.unknowncount1 = read_uint(f, '<')
+                for i in range(_mesh.unknowncount1):
+                    f.read(16)          # unknown
+            
+            _mesh.facecount = read_short(f, '<')
+            _mesh.faces = chunk_pc_mesh2_faces(f, _mesh.facecount)
+
+            if f.tell() & 4294967292 != f.tell():
+                f.read(2)
+            
+            _mesh.unknowncount2 = read_short(f, '<')
+            for i in range(_mesh.unknowncount2):
+                f.read(8)               # unknown
+            f.read(50)                  # unknown
+
+            if (ImportTempMesh):
+                new_mesh = bpy.data.meshes.new('prop visualization')
+                new_mesh.from_pydata(_mesh.vertices, [], _mesh.faces) #_mesh.faces)
+                new_mesh.update()
+                new_object = bpy.data.objects.new('Prop Visualization', new_mesh)
+                new_collection = bpy.data.collections.new(os.path.basename(filepath))
+                bpy.context.scene.collection.children.link(new_collection)
+                new_collection.objects.link(new_object)
+        
+    if ImportTempMesh:
+        f.seek(mesh2_offset)
+        for i in range(mesh2_count):
+            print(i)
+            chunk_pc_mesh2()
 
     # --- Import Meshes --- #
     if(ImportMesh): import_meshes(Meshes)
