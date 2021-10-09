@@ -126,8 +126,7 @@ def chunk_pc_mesh2_faces(f, count):
 
 def read_some_data(context, filepath, ImportProps, ImportMesh):
     print()
-    #print("Opening file: ", filepath)
-    #print()
+    print("Opening file: ", filepath)
     f = open(filepath, 'rb')
     
     
@@ -166,7 +165,9 @@ def read_some_data(context, filepath, ImportProps, ImportMesh):
     chunk_pc_PropCount          = read_uint(f, '<')
     chunk_pc_UnknownCount2      = read_uint(f, '<')
     chunk_pc_UnknownCount3      = read_uint(f, '<')
-    f.read(16)
+    chunk_pc_UnknownCount4      = read_uint(f, '<')
+
+    SeekToNextRow(f)
     
     
 # --- Unknown0 --- #
@@ -199,15 +200,20 @@ def read_some_data(context, filepath, ImportProps, ImportMesh):
         f.read(100)
     SeekToNextRow(f)
 
-    whattheshit = False
-    if (whattheshit):     # Sometimes we have a 64B block of random floats here.
-        f.read(64)
 
-# --- Unknown4 World Pos --- #
+# --- Unknown4 ---#
     print("Unknown4:            ", hex(f.tell()))
-    chunk_pc_UnknownCount4 = read_uint(f, '<')
-    Unknown4List =[]
+    print(chunk_pc_UnknownCount4)
+    f.read(16)
     for _ in range(chunk_pc_UnknownCount4):
+        f.read(48)
+
+#if False:
+# --- Unknown5 World Pos --- #
+    print("Unknown4:            ", hex(f.tell()))
+    chunk_pc_UnknownCount5 = read_uint(f, '<')
+    Unknown4List =[]
+    for _ in range(chunk_pc_UnknownCount5):
         X = read_float(f, '<')
         Z = read_float(f, '<')
         Y = read_float(f, '<')
