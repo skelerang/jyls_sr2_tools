@@ -203,11 +203,9 @@ def read_some_data(context, filepath, ImportProps, ImportMesh):
 
 # --- Unknown4 ---#
     print("Unknown4:            ", hex(f.tell()))
-    if(chunk_pc_UnknownCount4 > 0):
-        print(chunk_pc_UnknownCount4)
-        f.read(16)
-        for _ in range(chunk_pc_UnknownCount4):
-            f.read(48)
+    print(chunk_pc_UnknownCount4)
+    for _ in range(chunk_pc_UnknownCount4):
+        f.read(52)
 
 
 # --- Unknown5 World Pos --- #
