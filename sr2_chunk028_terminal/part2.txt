@@ -1,0 +1,43 @@
+# --- Mesh header? --- #
+0x0006E7F8  -   Unknown
+0x0006E8A0  -   Unknown
+
+0x0006EA3C  -   Unknown 20 bytes pattern 113 times.
+0x0006F380  -   Unknown 16 byte pattern 7 times
+0x0006F310  -   Unknown 16 byte pattern 112 times.
+
+
+# --- Mesh data --- #
+0x0006FA90  -   Model geometry. Lots of props.
+float,float,float * 78  -   PosXYZ * vertex count
+short * 164             -   index * face count?
+
+
+
+# --- Texture stuff? --- # 
+0x0009A164  -   24 byte pattern 656 times
+
+0x000A0E90  -   128 byte pattern 650? times
+
+
+
+0x000B5450  -   This is interesting
+
+0x000EDD70
+
+
+# --- Prop Data 1 --- #
+0x001099B0  -   More prop data? 80B pattern 1944 times
+46 7F 06 44 -   float: 537.98865    Pos X
+F8 36 74 40 -   float: 3.815855     Pos Y
+AA 9E CD 44 -   float: 1644.9583    Pos Z
+00 00 00 00
+64B of unknown
+
+
+# --- Prop Names --- #
+0x0012F930  -   1944 null terminated strings. Most likely names for prop list just above.
+0x001386F0
+9E 04 00 00 -   int? 1182?
+0x001386F0  -   57 prop name looking strings terminated with either 2 or 3 null bytes, whichever ends at an even byte.
+0x00138B90  -   32B null
