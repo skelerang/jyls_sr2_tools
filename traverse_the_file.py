@@ -203,21 +203,22 @@ def read_some_data(context, filepath, ImportProps, ImportMesh):
 
 # --- Unknown4 ---#
     print("Unknown4:            ", hex(f.tell()))
-    print(chunk_pc_UnknownCount4)
-    f.read(16)
-    for _ in range(chunk_pc_UnknownCount4):
-        f.read(48)
+    if(chunk_pc_UnknownCount4 > 0):
+        print(chunk_pc_UnknownCount4)
+        f.read(16)
+        for _ in range(chunk_pc_UnknownCount4):
+            f.read(48)
 
-#if False:
+
 # --- Unknown5 World Pos --- #
     print("Unknown4:            ", hex(f.tell()))
     chunk_pc_UnknownCount5 = read_uint(f, '<')
-    Unknown4List =[]
+    Unknown5List =[]
     for _ in range(chunk_pc_UnknownCount5):
         X = read_float(f, '<')
         Z = read_float(f, '<')
         Y = read_float(f, '<')
-        Unknown4List.append([X, Y, Z])
+        Unknown5List.append([X, Y, Z])
     print("exit:                ", hex(f.tell()))
 
 
