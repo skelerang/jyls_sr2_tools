@@ -315,8 +315,6 @@ def read_some_data(context, filepath, ImportProps, ImportMesh):
     ImportTempMesh = False
 
     def chunk_pc_mesh2():
-        ImportTempMesh = False
-        #ImportTempMesh = True
 
         class chunk_pc_mesh2():
             unknown0: int
