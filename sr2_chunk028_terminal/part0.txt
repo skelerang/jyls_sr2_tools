@@ -1,0 +1,91 @@
+sr2_chunk028_terminal
+part 0
+
+
+0x0             # --- Header --- #
+    12B     unknown     Probably same in every file, but haven't checked
+    uint32  unknown 0   (this is zero every file except for sr2_meshlibrary.chunk_pc, which says 2)
+    uint32  unknown 14  (this seems to be 30 or lower in every file)
+    # more unknown....
+
+0xA0 
+    uint32  unknown 711 (ranges in hundreds in files I checked)
+    12B     null
+
+
+0x100           # --- Texture List --- # 
+    uint32  textureCount    656
+    for textureCount
+        4B      null
+    for textureCount
+        cstr    texture name
+
+
+0x00003B40      # --- Header 1 --- #
+    uint32  unknownCount0   1073
+    uint32  propCount0      2080
+    uint32  unknownCount2   113     (number of models in file?)
+    uint32  unknownCount3   151
+
+
+0x00003B60      # --- Unknown --- #
+    for unknownCount0
+        24B unknown
+
+
+0x0000A000      # --- Prop0 --- #
+    for propCount0
+        # 96B:
+        float   X   World Pos
+        float   Y   World Pos
+        float   Z   World Pos
+        
+        76B                 unknown, affects destroyed model??
+        uint32  565         Changes destroyed model.
+        4B                  unknown
+
+
+0x0003AC00      # --- Unknown Pattern 2 --- #       Corrupting this whole section made no visible difference.
+    for unknownCount3
+        # 100B: may not be accurate.
+        float
+        float
+        float
+        4B
+
+        float
+        4B
+        4B
+        4B
+
+        float
+        float
+        4B
+        4B
+
+        float
+        float
+        float
+        float
+
+        float
+        float
+        float
+        float
+
+        float
+        float
+        float
+        float
+
+        4B      null
+    SeekToNextRow()
+
+0x0003E700      # --- Unknown World pos --- #
+    uint32: unknownCount4   20
+    for unknownCount4
+        float   X   World Pos
+        float   Y   World Pos
+        float   Z   World Pos
+
+0x0003E830  -   Filler
