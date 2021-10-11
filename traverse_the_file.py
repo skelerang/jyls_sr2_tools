@@ -279,29 +279,23 @@ def read_some_data(context, filepath, ImportProps, ImportMesh):
         unknown0: int
         unknown1: int
 
-        unknown2count: int
+        header1count: int
         unknown2 = []
 
     # --- Header --- #
     model0_list = []
-    f.read(2)
-    model0_unknowncount0 = read_short(f, '<')
-    f.read(16)
     print("Models 0 header0:    ", hex(f.tell()))
-    for _ in range(chunk_pc_Model0Count - 1):
+    for _ in range(chunk_pc_Model0Count):
         mesh = chunk_pc_model0_mesh()
-        mesh.unknown0 = read_short(f, '<')
-        mesh.unknown2count = read_short(f, '<')
+        mesh.unknown0 = read_short(f, '<')      # Can only be either 7 or 0?? If 0, skip the mesh
+        mesh.header1count = read_short(f, '<')
         mesh.indexCount = read_uint(f, '<')
         f.read(8)   # FF bytes
         f.read(4)   # null bytes
         model0_list.append(mesh)
-    print("Models 0 unknown0:   ", hex(f.tell()))    # skip unknown data
-    for _ in range(model0_unknowncount0):
-        f.read(16)
     print("Models 0 header1:    ", hex(f.tell()))
     for mesh in model0_list:
-        for _ in range(mesh.unknown2count):
+        for _ in range(mesh.header1count):
             mesh.unknown1 = read_uint(f, '<')
             mesh.vertCount = read_uint(f, '<')
             f.read(4)   # FF bytes
@@ -312,10 +306,11 @@ def read_some_data(context, filepath, ImportProps, ImportMesh):
     # --- Mesh Data --- #
     print("Models 0 mesh data:  ", hex(f.tell()))
     for mesh in model0_list:
-        mesh.vertices = chunk_pc_mesh_vertices(f, mesh.vertCount)
-        SeekToNextRow(f)
-        mesh.faces = chunk_pc_mesh_faces(f, mesh.indexCount)
-        SeekToNextRow(f)
+        if mesh.unknown0 == 7:
+            mesh.vertices = chunk_pc_mesh_vertices(f, mesh.vertCount)
+            SeekToNextRow(f)
+            mesh.faces = chunk_pc_mesh_faces(f, mesh.indexCount)
+            SeekToNextRow(f)
     
     # --- Import --- #
     if(ImportMesh): import_meshes(model0_list, main_collection)
