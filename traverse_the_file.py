@@ -320,22 +320,24 @@ def read_some_data(context, filepath, ImportProps, ImportMesh):
     print("Unknown 11:          ", hex(f.tell()))
     chunk_pc_UnknownCount11 = read_uint(f, '<') # Matches Texture List length?
     SeekToNextRow(f)
-    f.read(20)
-    test_count2 = 0
+    chunk_pc_UnknownCount11a = read_uint(f, '<')
+    f.read(8)
+    chunk_pc_UnknownCount11b = read_uint(f, '<')
+    chunk_pc_Unknown11c = read_uint(f, '<')
     for _ in range(chunk_pc_UnknownCount11):
-        f.read(14)
-        test_count2 += read_short(f, '<')
-        f.read(8)
-        #f.read(24)
-    test_count = 0
+        f.read(24)
     for _ in range(chunk_pc_UnknownCount11):
-        test_count += read_short(f, '<')
-    test_count3 = 0
-    for _ in range(chunk_pc_UnknownCount11):
-        f.read(8)
-        test_count3 += read_uint(f, '<')
         f.read(4)
-    print(test_count3)
+    for _ in range(chunk_pc_UnknownCount11):
+        f.read(16)
+    for _ in range(chunk_pc_UnknownCount11a):
+        f.read(4)
+    for _ in range(chunk_pc_UnknownCount11):
+        f.read(64)
+    for _ in range(chunk_pc_UnknownCount11b):
+        f.read(16)
+
+        
     return {'FINISHED'}
 
 from bpy_extras.io_utils import ImportHelper
