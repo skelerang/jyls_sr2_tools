@@ -5,6 +5,6 @@ The chunk_pc file is a loadable part of the world. It is what is needed for a ph
 Files:
 
 
-chunk_pc_import_mesh0.py:    This file imports models from the chunk, it's probably the one you're after.
-sr2_chunk_pc_import.py:    Old, broken.
-traverse_the_file.py:    For development
+chunk_pc_import_mesh0.py:    This file imports models from the chunk, it's probably the one you're after. 
+sr2_chunk_pc_import.py:    Old, broken. 
+traverse_the_file.py:    For development 
