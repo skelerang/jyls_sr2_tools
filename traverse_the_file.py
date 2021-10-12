@@ -316,6 +316,26 @@ def read_some_data(context, filepath, ImportProps, ImportMesh):
     if(ImportMesh): import_meshes(model0_list, main_collection)
 
 
+    # --- Unknown 11 --- #
+    print("Unknown 11:          ", hex(f.tell()))
+    chunk_pc_UnknownCount11 = read_uint(f, '<') # Matches Texture List length?
+    SeekToNextRow(f)
+    f.read(20)
+    test_count2 = 0
+    for _ in range(chunk_pc_UnknownCount11):
+        f.read(14)
+        test_count2 += read_short(f, '<')
+        f.read(8)
+        #f.read(24)
+    test_count = 0
+    for _ in range(chunk_pc_UnknownCount11):
+        test_count += read_short(f, '<')
+    test_count3 = 0
+    for _ in range(chunk_pc_UnknownCount11):
+        f.read(8)
+        test_count3 += read_uint(f, '<')
+        f.read(4)
+    print(test_count3)
     return {'FINISHED'}
 
 from bpy_extras.io_utils import ImportHelper
@@ -349,7 +369,7 @@ class ImportSomeData(Operator, ImportHelper):
     ImportMesh: BoolProperty(
         name="Import Meshes",
         description="Only works with sr2_chunk028_terminal!!!",
-        default=True,
+        default=False,
     )
 
     type: EnumProperty(
