@@ -324,20 +324,28 @@ def read_some_data(context, filepath, ImportProps, ImportMesh):
     f.read(8)
     chunk_pc_UnknownCount11b = read_uint(f, '<')
     chunk_pc_Unknown11c = read_uint(f, '<')
+
     for _ in range(chunk_pc_UnknownCount11):
         f.read(24)
-    for _ in range(chunk_pc_UnknownCount11):
-        f.read(4)
-    for _ in range(chunk_pc_UnknownCount11):
-        f.read(16)
-    for _ in range(chunk_pc_UnknownCount11a):
-        f.read(4)
-    for _ in range(chunk_pc_UnknownCount11):
-        f.read(64)
-    for _ in range(chunk_pc_UnknownCount11b):
-        f.read(16)
+    #for _ in range(822): # Where the hell can I get this from??
+    #    f.read(2)
+    #
+    #for _ in range(chunk_pc_UnknownCount11):
+    #    f.read(16)
+    #for _ in range(chunk_pc_UnknownCount11a):
+    #    f.read(4)
+    #for _ in range(chunk_pc_UnknownCount11):
+    #    f.read(64)
+    #unknown11b = []
+    #unknown11b2 = 0
+    #for _ in range(chunk_pc_UnknownCount11b):
+    #    f.read(10)
+    #    _temp = read_short(f, '<')
+    #    f.read(4)
+    #    unknown11b.append(_temp)
+    #    unknown11b2 += _temp
+    #    #print(_temp)
 
-        
     return {'FINISHED'}
 
 from bpy_extras.io_utils import ImportHelper
