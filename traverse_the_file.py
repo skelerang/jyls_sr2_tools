@@ -138,7 +138,9 @@ def read_some_data(context, filepath, ImportProps, ImportMesh):
 
 # --- Header --- #
     print("Header:              ", hex(f.tell()))
-    chunk_pc_Header0            = f.read(12) # This is same in every file?
+    header_magic                = read_uint(f, '<')
+    header_version              = read_uint(f, '<')
+    chunk_pc_Header0            = f.read(4) # This is same in every file?
     chunk_pc_HeaderB            = read_uint(f, '<')  # int: zero every file except for sr2_meshlibrary.chunk_pc, which says 2
     chunk_pc_HeaderC            = read_uint(f, '<')  # an int? this seems to be 30 or lower in every file
     chunk_pc_Header1            = f.read(24) # Unknown
@@ -149,6 +151,8 @@ def read_some_data(context, filepath, ImportProps, ImportMesh):
     chunk_pc_Header6            = f.read(4)  # null
     chunk_pc_Header5            = f.read(136)# Unknown
 
+    if header_magic != 0xBBCACA12: print("Incorrect Magic byte. Are you sure this is the correct file?")
+    if header_version != 121: print("Unknown version: ", header_version, "Expected: 121. Do you have a copy of some secret dev build??")
 
 # --- Texture List --- #
     print("Texture list:        ", hex(f.tell()))
