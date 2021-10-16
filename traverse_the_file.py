@@ -58,19 +58,11 @@ def read_cstr(f):
 def modify_bit( n,  p,  b):
     mask = 1 << p
     return (n & ~mask) | ((b << p) & mask)
-def SeekToNextRow(f):
-    # At multiple points the file continues at the next address where the least significant number is 0 (like 0xXXX0).
-    # This fn seeks there.
-
+def SeekToNextRow(f):    # Byte alignment seek, least significant number is 0 (like 0xXXX0).
     offset = f.tell()
-    # check if we're already at the beginning of the next row
-    if offset & 0xfffffff0 == offset:
-        pass
-    else:
-        # Add 16 to get to next row
-        offset += 16
-        # Zero 4 least significant bits to get to beginning of this row
-        offset = offset & 0xfffffff0
+    if offset & 0xfffffff0 != offset:
+        offset += 16                    # get to next row
+        offset = offset & 0xfffffff0    # get to beginning of this row
         f.seek(offset)
 
     
@@ -138,21 +130,24 @@ def read_some_data(context, filepath, ImportProps, ImportMesh):
 
 # --- Header --- #
     print("Header:              ", hex(f.tell()))
+    # Header 256B total
     header_magic                = read_uint(f, '<')
     header_version              = read_uint(f, '<')
     chunk_pc_Header0            = f.read(4) # This is same in every file?
-    chunk_pc_HeaderB            = read_uint(f, '<')  # int: zero every file except for sr2_meshlibrary.chunk_pc, which says 2
-    chunk_pc_HeaderC            = read_uint(f, '<')  # an int? this seems to be 30 or lower in every file
-    chunk_pc_Header1            = f.read(24) # Unknown
-    chunk_pc_Header2            = f.read(8)  # null
-    chunk_pc_Header3            = f.read(40) # Unknown
-    chunk_pc_Header4            = f.read(4)  # null
-    chunk_pc_Header5            = f.read(20) # Unknown
-    chunk_pc_Header6            = f.read(4)  # null
-    chunk_pc_Header5            = f.read(136)# Unknown
+    chunk_pc_HeaderB            = read_uint(f, '<')  # zero every file except for sr2_meshlibrary.chunk_pc, which says 2
+    
+    f.seek(0xf0)
+    header_unknownF0            = read_uint(f, '<') # can be 0 - 38?
 
-    if header_magic != 0xBBCACA12: print("Incorrect Magic byte. Are you sure this is the correct file?")
-    if header_version != 121: print("Unknown version: ", header_version, "Expected: 121. Do you have a copy of some secret dev build??")
+    SeekToNextRow(f)
+
+    if header_magic != 0xBBCACA12:
+        print("Incorrect Magic byte. Are you sure this is the correct file?")
+        return {'CANCELLED'}
+    if header_version != 121:
+        print("Unexpected version: ", header_version, "Expected: 121. Is this from some secret dev build??")
+        return {'CANCELLED'}
+
 
 # --- Texture List --- #
     print("Texture list:        ", hex(f.tell()))
@@ -249,16 +244,16 @@ def read_some_data(context, filepath, ImportProps, ImportMesh):
     SeekToNextRow(f)
 
 
-# --- Unknown 9 MOPP --- #
-    print("Unknown9 MOPP:       ", hex(f.tell()))
-    chunk_pc_Unknown9Length = read_uint(f, '<')
+# --- Havok Mopp Collision tree --- #
+    print("Havok Mopp:          ", hex(f.tell()))
+    chunk_pc_Havok_Mopp_length = read_uint(f, '<')
     SeekToNextRow(f)
-    f.read(chunk_pc_Unknown9Length)
+    f.read(chunk_pc_Havok_Mopp_length)
     
+    # Byte alignment 4
     if f.tell() & 0xfffffffc != f.tell():
         f.read(4)
         f.seek(f.tell() & 0xfffffffc)
-    #SeekToNextRow(f)
 
 
 # --- Unknown 10 2x World Pos --- #
@@ -272,6 +267,7 @@ def read_some_data(context, filepath, ImportProps, ImportMesh):
     #print (X, Y, Z)
     #print (X1, Y1, Z1)
     SeekToNextRow(f)
+
 
 # --- Models 0 --- #
     print("Models 0:            ", hex(f.tell()))
@@ -320,7 +316,7 @@ def read_some_data(context, filepath, ImportProps, ImportMesh):
     if(ImportMesh): import_meshes(model0_list, main_collection)
 
 
-    # --- Unknown 11 --- #
+# --- Unknown 11 --- #
     print("Unknown 11:          ", hex(f.tell()))
     chunk_pc_UnknownCount11 = read_uint(f, '<') # Matches Texture List length?
     SeekToNextRow(f)
