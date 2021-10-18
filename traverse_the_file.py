@@ -121,7 +121,7 @@ def read_some_data(context, filepath, ImportProps, ImportMesh):
     print()
     print("Opening file: ", filepath)
     f = open(filepath, 'rb')
-    
+    v = False
     
 # --- Create Collection --- #
     if ImportMesh:
@@ -129,7 +129,7 @@ def read_some_data(context, filepath, ImportProps, ImportMesh):
         bpy.context.scene.collection.children.link(main_collection)
 
 # --- Header --- #
-    print("Header:              ", hex(f.tell()))
+    if v:print("Header:              ", hex(f.tell()))
     # Header 256B total
     CHUNK_MAGIC                 = read_uint(f, '<')
     CHUNK_VERSION               = read_uint(f, '<')     # sr2 pc chunks are ver. 121
@@ -163,7 +163,7 @@ def read_some_data(context, filepath, ImportProps, ImportMesh):
 
 
 # --- Texture List --- #
-    print("Texture list:        ", hex(f.tell()))
+    if v:print("Texture list:        ", hex(f.tell()))
     chunk_pc_TexCount           = read_uint(f, '<')
     
     # null byte filler, length is TexCount*4
@@ -178,7 +178,7 @@ def read_some_data(context, filepath, ImportProps, ImportMesh):
     
     
 # --- Header 1 --- #
-    print("Header 1:            ", hex(f.tell()))
+    if v:print("Header 1:            ", hex(f.tell()))
     chunk_pc_UnknownCount0      = read_uint(f, '<')
     chunk_pc_PropCount          = read_uint(f, '<')
     chunk_pc_Model0Count        = read_uint(f, '<')
@@ -189,7 +189,7 @@ def read_some_data(context, filepath, ImportProps, ImportMesh):
     
     
 # --- Unknown0 --- #
-    print("Unknown0:            ", hex(f.tell()))
+    if v:print("Unknown0:            ", hex(f.tell()))
     # 24B
     Unknown0 = []
     for _ in range (chunk_pc_UnknownCount0):
@@ -198,7 +198,7 @@ def read_some_data(context, filepath, ImportProps, ImportMesh):
     
 
 # --- Prop Data 0 --- #
-    print("Props0:              ", hex(f.tell()))
+    if v:print("Props0:              ", hex(f.tell()))
     # 96B
     Props = []
     for _ in range (chunk_pc_PropCount):
@@ -215,7 +215,7 @@ def read_some_data(context, filepath, ImportProps, ImportMesh):
 
 
 # --- Unknown3 --- #
-    print("Unknown3:            ", hex(f.tell()))
+    if v:print("Unknown3:            ", hex(f.tell()))
     # 100B
     for _ in range(chunk_pc_UnknownCount3):
         f.read(100)
@@ -223,16 +223,17 @@ def read_some_data(context, filepath, ImportProps, ImportMesh):
 
 
 # --- Unknown4 ---#
-    print("Unknown4:            ", hex(f.tell()))
+    if v:print("Unknown4:            ", hex(f.tell()))
     # 52B
     for _ in range(chunk_pc_UnknownCount4):
         f.read(52)
     SeekToNextRow(f)
 
 # --- Unknown5 World Pos --- #
-    print("Unknown5:            ", hex(f.tell()))
+    if v:print("Unknown5:            ", hex(f.tell()))
     # 12B
     chunk_pc_UnknownCount5 = read_uint(f, '<')
+    if v:print(chunk_pc_UnknownCount5)
     Unknown5List =[]
     for _ in range(chunk_pc_UnknownCount5):
         X = read_float(f, '<')
@@ -242,31 +243,33 @@ def read_some_data(context, filepath, ImportProps, ImportMesh):
 
 
 # --- Unknown 6 --- #
-    print("Unknown6:            ", hex(f.tell()))
+    if v:print("Unknown6:            ", hex(f.tell()))
     # 3B ??
     chunk_pc_UnknownCount6 = read_uint(f, '<')
     f.read(chunk_pc_UnknownCount6 * 3)  # What is this garbage??
 
 
 # --- Unknown 7 --- #
-    print("Unknown7:            ", hex(f.tell()))
+    if v:print("Unknown7:            ", hex(f.tell()))
     # 4B
     chunk_pc_UnknownCount7 = read_uint(f, '<')
+    if v:print(chunk_pc_UnknownCount7)
     for _ in range (chunk_pc_UnknownCount7):
         read_uint(f, '<')
 
 
 # --- Unknown 8 --- #
-    print("Unknown8:            ", hex(f.tell()))
+    if v:print("Unknown8:            ", hex(f.tell()))
     # 12B
     chunk_pc_UnknownCount8 = read_uint(f, '<')
+    if v:print(chunk_pc_UnknownCount8)
     for _ in range(chunk_pc_UnknownCount8):
         f.read(12)
     SeekToNextRow(f)
 
 
 # --- Havok Mopp Collision tree --- #
-    print("Havok Mopp:          ", hex(f.tell()))
+    if v:print("Havok Mopp:          ", hex(f.tell()))
     chunk_pc_Havok_Mopp_length = read_uint(f, '<')
     SeekToNextRow(f)
     f.read(chunk_pc_Havok_Mopp_length)
@@ -278,7 +281,7 @@ def read_some_data(context, filepath, ImportProps, ImportMesh):
 
 
 # --- Unknown 10 2x World Pos --- #
-    print("Unknown10:           ", hex(f.tell()))
+    if v:print("Unknown10:           ", hex(f.tell()))
     # 24B total
     X = read_float(f, '<')
     Z = read_float(f, '<')
@@ -292,7 +295,7 @@ def read_some_data(context, filepath, ImportProps, ImportMesh):
 
 
 # --- Models 0 --- #
-    print("Models 0:            ", hex(f.tell()))
+    if v:print("Models 0:            ", hex(f.tell()))
     class chunk_pc_model0_mesh:
         vertCount: int
         indexCount: int
@@ -306,7 +309,7 @@ def read_some_data(context, filepath, ImportProps, ImportMesh):
 
     # --- Header --- #
     model0_list = []
-    print("Models 0 header0:    ", hex(f.tell()))
+    if v:print("Models 0 header0:    ", hex(f.tell()))
     # 24B
     for _ in range(chunk_pc_Model0Count):
         mesh = chunk_pc_model0_mesh()
@@ -316,7 +319,7 @@ def read_some_data(context, filepath, ImportProps, ImportMesh):
         f.read(8)   # FF bytes
         f.read(4)   # null bytes
         model0_list.append(mesh)
-    print("Models 0 header1:    ", hex(f.tell()))
+    if v:print("Models 0 header1:    ", hex(f.tell()))
     # 16B
     for mesh in model0_list:
         for _ in range(mesh.header1count):
@@ -327,7 +330,7 @@ def read_some_data(context, filepath, ImportProps, ImportMesh):
     SeekToNextRow(f)
 
     # --- Mesh Data --- #
-    print("Models 0 mesh data:  ", hex(f.tell()))
+    if v:print("Models 0 mesh data:  ", hex(f.tell()))
     for mesh in model0_list:
         if mesh.unknown0 == 7:
             mesh.vertices = chunk_pc_mesh_vertices(f, mesh.vertCount)
@@ -340,7 +343,7 @@ def read_some_data(context, filepath, ImportProps, ImportMesh):
 
 
 # --- Unknown 11 --- #
-    print("Unknown 11:          ", hex(f.tell()))
+    if v:print("Unknown 11:          ", hex(f.tell()))
     chunk_pc_UnknownCount11 = read_uint(f, '<') # Matches Texture List length?
     SeekToNextRow(f)
     chunk_pc_UnknownCount11a = read_uint(f, '<')
@@ -348,10 +351,18 @@ def read_some_data(context, filepath, ImportProps, ImportMesh):
     chunk_pc_UnknownCount11b = read_uint(f, '<')
     chunk_pc_Unknown11c = read_uint(f, '<')
 
+    _temp = 0
+    _temp2 = 0
     for _ in range(chunk_pc_UnknownCount11):
-        f.read(24)
-    for _ in range(822): # Where the hell can I get this from??
+        f.read(8)
+        _temp += read_uint(f, '<')
+        _temp2 += read_short(f, '<')
+        f.read(10)
+        #f.read(24)
+    print(_temp)
+    for _ in range(_temp2 * 3 + 4): # Where the hell can I get this from??
         f.read(2)
+    print(hex(f.tell()))
     #
     #for _ in range(chunk_pc_UnknownCount11):
     #    f.read(16)
