@@ -131,21 +131,34 @@ def read_some_data(context, filepath, ImportProps, ImportMesh):
 # --- Header --- #
     print("Header:              ", hex(f.tell()))
     # Header 256B total
-    header_magic                = read_uint(f, '<')
-    header_version              = read_uint(f, '<')
-    chunk_pc_Header0            = f.read(4) # This is same in every file?
-    chunk_pc_HeaderB            = read_uint(f, '<')  # zero every file except for sr2_meshlibrary.chunk_pc, which says 2
+    CHUNK_MAGIC                 = read_uint(f, '<')
+    CHUNK_VERSION               = read_uint(f, '<')     # sr2 pc chunks are ver. 121
+    header_2                    = read_uint(f, '<')     # This is same in every file?
+    header_3                    = read_uint(f, '<')     # Always zero except for sr2_meshlibrary.chunk_pc, which says 2
+
+    f.seek(0x94)
+    header_UnknownCount18       = read_uint(f, '<')
+    header_19                   = read_uint(f, '<')
+    f.read(4)
+    header_20                   = read_uint(f, '<')
+    f.seek(0xD4)
+    header_21                   = read_uint(f, '<') # --- World Pos X? --- #
+    header_22                   = read_uint(f, '<') # --- World Pos Y? --- #
+    header_23                   = read_uint(f, '<') # --- World Pos Z? --- #
+    header_24                   = read_uint(f, '<') # --- World Pos X? --- #
+    header_25                   = read_uint(f, '<') # --- World Pos Y? --- #
+    header_26                   = read_uint(f, '<') # --- World Pos Z? --- #
+    header_27                   = read_uint(f, '<') # --- float
     
-    f.seek(0xf0)
     header_unknownF0            = read_uint(f, '<') # can be 0 - 38?
 
     SeekToNextRow(f)
 
-    if header_magic != 0xBBCACA12:
+    if CHUNK_MAGIC != 0xBBCACA12:
         print("Incorrect Magic byte. Are you sure this is the correct file?")
         return {'CANCELLED'}
-    if header_version != 121:
-        print("Unexpected version: ", header_version, "Expected: 121. Is this from some secret dev build??")
+    if CHUNK_VERSION != 121:
+        print("Unexpected version: ", CHUNK_VERSION, "Expected: 121. Is this from some secret dev build??")
         return {'CANCELLED'}
 
 
@@ -168,7 +181,7 @@ def read_some_data(context, filepath, ImportProps, ImportMesh):
     print("Header 1:            ", hex(f.tell()))
     chunk_pc_UnknownCount0      = read_uint(f, '<')
     chunk_pc_PropCount          = read_uint(f, '<')
-    chunk_pc_Model0Count      = read_uint(f, '<')
+    chunk_pc_Model0Count        = read_uint(f, '<')
     chunk_pc_UnknownCount3      = read_uint(f, '<')
     chunk_pc_UnknownCount4      = read_uint(f, '<')
 
@@ -177,6 +190,7 @@ def read_some_data(context, filepath, ImportProps, ImportMesh):
     
 # --- Unknown0 --- #
     print("Unknown0:            ", hex(f.tell()))
+    # 24B
     Unknown0 = []
     for _ in range (chunk_pc_UnknownCount0):
         _temp = f.read(24)
@@ -185,6 +199,7 @@ def read_some_data(context, filepath, ImportProps, ImportMesh):
 
 # --- Prop Data 0 --- #
     print("Props0:              ", hex(f.tell()))
+    # 96B
     Props = []
     for _ in range (chunk_pc_PropCount):
         prop = SR2_Prop()
@@ -201,6 +216,7 @@ def read_some_data(context, filepath, ImportProps, ImportMesh):
 
 # --- Unknown3 --- #
     print("Unknown3:            ", hex(f.tell()))
+    # 100B
     for _ in range(chunk_pc_UnknownCount3):
         f.read(100)
     SeekToNextRow(f)
@@ -208,12 +224,14 @@ def read_some_data(context, filepath, ImportProps, ImportMesh):
 
 # --- Unknown4 ---#
     print("Unknown4:            ", hex(f.tell()))
+    # 52B
     for _ in range(chunk_pc_UnknownCount4):
         f.read(52)
     SeekToNextRow(f)
 
 # --- Unknown5 World Pos --- #
     print("Unknown5:            ", hex(f.tell()))
+    # 12B
     chunk_pc_UnknownCount5 = read_uint(f, '<')
     Unknown5List =[]
     for _ in range(chunk_pc_UnknownCount5):
@@ -225,12 +243,14 @@ def read_some_data(context, filepath, ImportProps, ImportMesh):
 
 # --- Unknown 6 --- #
     print("Unknown6:            ", hex(f.tell()))
+    # 3B ??
     chunk_pc_UnknownCount6 = read_uint(f, '<')
     f.read(chunk_pc_UnknownCount6 * 3)  # What is this garbage??
 
 
 # --- Unknown 7 --- #
     print("Unknown7:            ", hex(f.tell()))
+    # 4B
     chunk_pc_UnknownCount7 = read_uint(f, '<')
     for _ in range (chunk_pc_UnknownCount7):
         read_uint(f, '<')
@@ -238,6 +258,7 @@ def read_some_data(context, filepath, ImportProps, ImportMesh):
 
 # --- Unknown 8 --- #
     print("Unknown8:            ", hex(f.tell()))
+    # 12B
     chunk_pc_UnknownCount8 = read_uint(f, '<')
     for _ in range(chunk_pc_UnknownCount8):
         f.read(12)
@@ -258,6 +279,7 @@ def read_some_data(context, filepath, ImportProps, ImportMesh):
 
 # --- Unknown 10 2x World Pos --- #
     print("Unknown10:           ", hex(f.tell()))
+    # 24B total
     X = read_float(f, '<')
     Z = read_float(f, '<')
     Y = read_float(f, '<')
@@ -285,6 +307,7 @@ def read_some_data(context, filepath, ImportProps, ImportMesh):
     # --- Header --- #
     model0_list = []
     print("Models 0 header0:    ", hex(f.tell()))
+    # 24B
     for _ in range(chunk_pc_Model0Count):
         mesh = chunk_pc_model0_mesh()
         mesh.unknown0 = read_short(f, '<')      # Can only be either 7 or 0?? If 0, skip the mesh
@@ -294,13 +317,13 @@ def read_some_data(context, filepath, ImportProps, ImportMesh):
         f.read(4)   # null bytes
         model0_list.append(mesh)
     print("Models 0 header1:    ", hex(f.tell()))
+    # 16B
     for mesh in model0_list:
         for _ in range(mesh.header1count):
             mesh.unknown1 = read_uint(f, '<')
             mesh.vertCount = read_uint(f, '<')
             f.read(4)   # FF bytes
             f.read(4)   # null bytes
-    #f.read(16)  # null bytes
     SeekToNextRow(f)
 
     # --- Mesh Data --- #
@@ -327,8 +350,8 @@ def read_some_data(context, filepath, ImportProps, ImportMesh):
 
     for _ in range(chunk_pc_UnknownCount11):
         f.read(24)
-    #for _ in range(822): # Where the hell can I get this from??
-    #    f.read(2)
+    for _ in range(822): # Where the hell can I get this from??
+        f.read(2)
     #
     #for _ in range(chunk_pc_UnknownCount11):
     #    f.read(16)
