@@ -399,19 +399,6 @@ def read_some_data(context, filepath, ImportProps, ImportMesh, ImportCityObjs):
     print("11b: ", chunk_pc_UnknownCount11b)
     print("11c: ", chunk_pc_UnknownCount11c)
 
-    # whoever came up with the next section: 
-
-    # ....................../´¯/) 
-    # ....................,/¯../ 
-    # .................../..../ 
-    # ............./´¯/'...'/´¯¯`·¸ 
-    # ........../'/.../..../......./¨¯\ 
-    # ........('(...´...´.... ¯~/'...') 
-    # .........\.................'...../ 
-    # ..........''...\.......... _.·´ 
-    # ............\..............( 
-    # ..............\.............\...
-
     # So I think the logic to get the length is this:
     # Unk11d = short at 0xc of this pattern
     # length = sum of every Unk11d value + 2 bytes for every Unk11d that's an odd number
