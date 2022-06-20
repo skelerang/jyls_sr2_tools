@@ -1,9 +1,9 @@
 bl_info = {
     "name": "SR2 chunk_pc",
-    "description": "Imports MDN files from Metal Gear Solid 4.",
+    "description": "Import sr2 chunk_pc",
     "author": "MyRightArmTheGodHand",
     "version": (0, 0, 1),
-    "blender": (2, 80, 0), # I have no clue on compatibility. I'm running this on 2.90.10
+    "blender": (2, 80, 0), # I have no clue on compatibility.
     "category": "Import-Export"
     }
 import bpy
@@ -81,6 +81,15 @@ class SR2_chunk_pc_mesh:
     unknown0: int
     unknown1: int
 
+class SR2_cityobj:
+    name: str
+    posx: float
+    posy: float
+    posz: float
+    pos1x: float
+    pos1y: float
+    pos1z: float
+
 def chunk_pc_mesh_vertices(f, count):
     vertices = []
     for _ in range(count):
@@ -117,14 +126,48 @@ def chunk_pc_mesh2_faces(f, count):
         faces.append(face)
     return(faces)
 
-def read_some_data(context, filepath, ImportProps, ImportMesh):
+def chunk_pc_cityobjects(cityobjs, main_collection):
+    print("Importing Cityobjs")
+    new_collection = bpy.data.collections.new('City Objects')
+    main_collection.children.link(new_collection)
+    for i, obj in enumerate(cityobjs):
+        print("creating ", i+1, "/", len(cityobjs), ": ", obj.name)
+        # make a cube from the 2 positions
+        verts = [
+            (obj.posx, obj.posz, obj.posy),
+            (obj.posx, obj.posz, obj.pos1y),
+            (obj.posx, obj.pos1z, obj.posy),
+            (obj.posx, obj.pos1z, obj.pos1y),
+            (obj.pos1x, obj.posz, obj.posy),
+            (obj.pos1x, obj.posz, obj.pos1y),
+            (obj.pos1x, obj.pos1z, obj.posy),
+            (obj.pos1x, obj.pos1z, obj.pos1y)
+            ]
+        
+        faces = [
+            (1,3,2,0),
+            (4,5,1,0),
+            (2,6,4,0),
+            (5,7,3,1),
+            (3,7,6,2),
+            (6,7,5,4)
+            ]
+
+        new_mesh = bpy.data.meshes.new('mesh')
+        new_mesh.from_pydata(verts, [], faces)
+        new_mesh.update()
+
+        new_object = bpy.data.objects.new(obj.name, new_mesh)
+        new_collection.objects.link(new_object)
+
+def read_some_data(context, filepath, ImportProps, ImportMesh, ImportCityObjs):
     print()
     print("Opening file: ", filepath)
     f = open(filepath, 'rb')
     v = False
     
 # --- Create Collection --- #
-    if ImportMesh:
+    if ImportMesh or ImportCityObjs:
         main_collection = bpy.data.collections.new(os.path.basename(filepath))
         bpy.context.scene.collection.children.link(main_collection)
 
@@ -135,9 +178,11 @@ def read_some_data(context, filepath, ImportProps, ImportMesh):
     CHUNK_VERSION               = read_uint(f, '<')     # sr2 pc chunks are ver. 121
     header_2                    = read_uint(f, '<')     # This is same in every file?
     header_3                    = read_uint(f, '<')     # Always zero except for sr2_meshlibrary.chunk_pc, which says 2
+    
+    header_4                    = read_uint(f, '<')     # Unknown count
 
     f.seek(0x94)
-    header_UnknownCount18       = read_uint(f, '<')
+    header_UnknownCount18       = read_uint(f, '<')     # city objects?
     header_19                   = read_uint(f, '<')
     f.read(4)
     header_20                   = read_uint(f, '<')
@@ -184,7 +229,6 @@ def read_some_data(context, filepath, ImportProps, ImportMesh):
     chunk_pc_Model0Count        = read_uint(f, '<')
     chunk_pc_UnknownCount3      = read_uint(f, '<')
     chunk_pc_UnknownCount4      = read_uint(f, '<')
-
     SeekToNextRow(f)
     
     
@@ -343,43 +387,233 @@ def read_some_data(context, filepath, ImportProps, ImportMesh):
 
 
 # --- Unknown 11 --- #
-    if v:print("Unknown 11:          ", hex(f.tell()))
-    chunk_pc_UnknownCount11 = read_uint(f, '<') # Matches Texture List length?
+    print("Unknown 11:          ", hex(f.tell()))
+    chunk_pc_UnknownCount11a = read_uint(f, '<') # Matches Texture List length?
     SeekToNextRow(f)
-    chunk_pc_UnknownCount11a = read_uint(f, '<')
-    f.read(8)
     chunk_pc_UnknownCount11b = read_uint(f, '<')
+    f.read(8)
+    chunk_pc_UnknownCount11c = read_uint(f, '<')
     chunk_pc_Unknown11c = read_uint(f, '<')
 
-    _temp = 0
-    _temp2 = 0
-    for _ in range(chunk_pc_UnknownCount11):
-        f.read(8)
-        _temp += read_uint(f, '<')
-        _temp2 += read_short(f, '<')
-        f.read(10)
-        #f.read(24)
-    print(_temp)
-    for _ in range(_temp2 * 3 + 4): # Where the hell can I get this from??
-        f.read(2)
-    print(hex(f.tell()))
-    #
-    #for _ in range(chunk_pc_UnknownCount11):
-    #    f.read(16)
-    #for _ in range(chunk_pc_UnknownCount11a):
-    #    f.read(4)
-    #for _ in range(chunk_pc_UnknownCount11):
-    #    f.read(64)
-    #unknown11b = []
-    #unknown11b2 = 0
-    #for _ in range(chunk_pc_UnknownCount11b):
-    #    f.read(10)
-    #    _temp = read_short(f, '<')
-    #    f.read(4)
-    #    unknown11b.append(_temp)
-    #    unknown11b2 += _temp
-    #    #print(_temp)
+    print("11a: ", chunk_pc_UnknownCount11a)
+    print("11b: ", chunk_pc_UnknownCount11b)
+    print("11c: ", chunk_pc_UnknownCount11c)
 
+    # whoever came up with the next section: 
+
+    # ....................../´¯/) 
+    # ....................,/¯../ 
+    # .................../..../ 
+    # ............./´¯/'...'/´¯¯`·¸ 
+    # ........../'/.../..../......./¨¯\ 
+    # ........('(...´...´.... ¯~/'...') 
+    # .........\.................'...../ 
+    # ..........''...\.......... _.·´ 
+    # ............\..............( 
+    # ..............\.............\...
+
+    # So I think the logic to get the length is this:
+    # Unk11d = short at 0xc of this pattern
+    # length = sum of every Unk11d value + 2 bytes for every Unk11d that's an odd number
+    # This may still be wrong but it worked with every chunk I tried so far. What a pain.
+
+    Unk11d_total = 0
+    Unk11d_count = 0
+    Unk11d_odds = 0
+
+    Unk11f_total = 0
+    Unk11f_count = 0
+
+    Unk11f2_total = 0
+    Unk11f2_count = 0
+    
+    print(hex(f.tell()))
+    for _ in range(chunk_pc_UnknownCount11a):
+        f.read(8)
+        
+        f.read(4)
+
+        Unk11d = read_short(f, '<')
+        if Unk11d != 0:
+            Unk11d_total += Unk11d
+            Unk11d_count += 1
+            if Unk11d % 2 != 0:
+                Unk11d_odds += 1
+
+         
+        Unk11f = read_short(f, '<')
+        if Unk11f != 0:
+            Unk11f_total += Unk11f
+            Unk11f_count += 1
+        
+        f.read(2)
+
+        Unk11f2 = read_short(f, '<')
+        if Unk11f2 != 0:
+            Unk11f2_total += Unk11f2
+            Unk11f2_count += 1
+
+        #f.read(2)
+        #f.read(2) 
+        f.read(4)
+
+    #print("Unknown 11d total: ", Unk11d_total)
+    #print("Unknown 11d count: ", Unk11d_count)
+    #print("Unknown 11d odd values: ", Unk11d_odds)
+    #print("Unknown 11f2 total: ", Unk11f2_total)
+    #print("Unknown 11f2 count: ", Unk11f2_count)
+    #print("")
+    if v:print("Unknown 11d length: ", Unk11d_total * 6 + Unk11d_odds*2)
+
+    for _ in range(Unk11d_total):
+        f.read(6)
+    for _ in range(Unk11d_odds):
+        f.read(2)
+
+    # Byte alignment 4
+    if f.tell() & 0xfffffffc != f.tell():
+        f.read(4)
+        f.seek(f.tell() & 0xfffffffc)
+    if v:print(hex(f.tell()))
+
+    
+    for _ in range(chunk_pc_UnknownCount11a):
+        f.read(16)
+
+    SeekToNextRow(f)
+    if v:pass
+    #print(hex(f.tell()))
+
+    for _ in range(chunk_pc_UnknownCount11b):
+        f.read(4)
+    #print("b4 11f: ", hex(f.tell()))
+
+    for _ in range((Unk11f_count+1)):
+        f.read(64)
+    #print("after 11f: ", hex(f.tell()))
+
+    Unk11g_total = 0
+    Unk11h_total = 0
+    for _ in range((chunk_pc_UnknownCount11c)):
+        f.read(8)
+        Unk11g_total += read_short(f, '<')
+        Unk11h_total += read_short(f, '<')
+        f.read(4)
+    #print(hex(f.tell()))
+
+    #print("Unk11g: ", Unk11g_total)
+    #print("Unk11h: ", Unk11h_total)
+
+    for _ in range((Unk11g_total)):
+        f.read(4)
+    #print(hex(f.tell()))
+
+    # size: f(x,y) = 64 + 16(x+2y)
+    for i in range(chunk_pc_UnknownCount0):
+        f.seek(f.tell() & 0xfffffff0) # Not sure how the first bytes work but this should make sure x is aligned.
+        f.read(50)
+        x = read_short(f, '<')
+        f.read(14)
+        y = read_short(f, '<')
+        # read 68 bytes so far
+        f.read(16 * (x + 2 * y) - 4)
+    #print(hex(f.tell()))
+    
+
+    # --- City Objects --- #
+
+    cityobjs = []
+    
+    # --- Bounding Box --- #
+
+    #80B
+    print("pulling cityobjs: ", header_UnknownCount18)
+    for i in range(header_UnknownCount18):
+        cityobj = SR2_cityobj()
+        #f.read(16)
+        cityobj.posx = read_float(f, '<')
+        cityobj.posy = read_float(f, '<')
+        cityobj.posz = read_float(f, '<')
+        f.read(4)
+        cityobj.pos1x = read_float(f, '<')
+        cityobj.pos1y = read_float(f, '<')
+        cityobj.pos1z = read_float(f, '<')
+        f.read(52)
+        cityobjs.append(cityobj)
+        print(i, "/", header_UnknownCount18)
+        
+    print("naming cityobjs")
+    for i in range (header_UnknownCount18):
+        #unk18name = read_cstr(f)
+        #print(unk18name)
+        cityobjs[i].name = read_cstr(f)
+        print(i+1, "/", header_UnknownCount18, ": ", cityobjs[i].name)
+
+    if ImportCityObjs: chunk_pc_cityobjects(cityobjs, main_collection)
+
+    SeekToNextRow(f)
+
+    unknown12size = read_uint(f, '<')
+    # print(hex(f.tell()))
+    # for i in range (53):
+    #     objname = read_cstr(f)
+    #     print(i, ": ", hex(f.tell()), " ", objname)
+    #     f.read(2)
+    #     f.seek(f.tell() & 0xfffffffe)
+    # print(hex(f.tell()))
+    f.read(unknown12size)
+    SeekToNextRow(f)
+
+    unknown12b_count = read_uint(f, '<')
+    for _ in range(unknown12b_count):
+        f.read(4)
+    SeekToNextRow(f)
+
+    unknown13size = read_uint(f, '<')
+    f.read(unknown13size)
+
+    SeekToNextRow(f)
+    f.read(16)
+    
+    unknown13b_count = read_uint(f, '<')
+    for _ in range(unknown13b_count):
+        f.read(28)
+
+    f.read(unknown13b_count*28) # floats
+
+    unknown13c_count = read_uint(f, '<')
+
+    for _ in range(unknown13c_count):
+        f.read(12) 
+    for _ in range(unknown13c_count):
+        f.read(12)
+    
+    SeekToNextRow(f)
+    f.read(32)
+
+    for _ in range(header_19):
+        f.read(48) # World coords?
+
+    unknown13d_count = read_uint(f, '<')
+    f.read(4)
+    unknown13e_count = read_uint(f, '<')
+    f.read(4)
+    for _ in range(unknown13d_count):
+        f.read(48) # World coords?
+    for _ in range(unknown13e_count):
+        f.read(2) # World coords?
+    
+    print(unknown12b_count)
+    print(unknown13size)
+    print(unknown13b_count)
+    print(unknown13c_count)
+    print(unknown13d_count)
+    print(unknown13e_count)
+
+    SeekToNextRow(f)
+    print("number: ", header_19)
+
+    print("end, ", hex(f.tell()))
     return {'FINISHED'}
 
 from bpy_extras.io_utils import ImportHelper
@@ -416,6 +650,12 @@ class ImportSomeData(Operator, ImportHelper):
         default=False,
     )
 
+    ImportCityObjs: BoolProperty(
+        name="Import City Objects",
+        description="Only works with sr2_chunk028_terminal!!!",
+        default=False,
+    )
+
     type: EnumProperty(
         name="Example Enum",
         description="Choose between two items",
@@ -428,7 +668,7 @@ class ImportSomeData(Operator, ImportHelper):
 
     def execute(self, context):
         if self.type == 'FILE':
-            return read_some_data(context, self.filepath, self.ImportProps, self.ImportMesh)
+            return read_some_data(context, self.filepath, self.ImportProps, self.ImportMesh, self.ImportCityObjs)
         else:
             dirname = os.path.dirname(self.filepath)
             files = sorted(os.listdir(dirname))
