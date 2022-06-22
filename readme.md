@@ -3,9 +3,9 @@ The chunk_pc file is a loadable part of the world. It is what is needed for a ph
 
 
 Files:
+import_chunk_bbox1.py:    Import bounding boxes
 
-
-chunk_pc_import_mesh0.py:    This file imports models from the chunk, it's probably the one you're after. 
+chunk_pc_import_mesh0.py:    Old importer for models
 
 sr2_chunk_pc_import.py:    Old, broken.
 
