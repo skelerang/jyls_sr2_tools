@@ -1,7 +1,7 @@
 bl_info = {
     "name": "SR2 chunk_pc",
     "description": "Import sr2 chunk_pc",
-    "author": "MyRightArmTheGodHand",
+    "author": "Skelerang",
     "version": (0, 0, 1),
     "blender": (2, 80, 0), # I have no clue on compatibility.
     "category": "Import-Export"

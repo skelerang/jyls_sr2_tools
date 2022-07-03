@@ -1,7 +1,7 @@
 bl_info = {
     "name": "SR2 chunk_pc",
     "description": "Import sr2 chunk_pc",
-    "author": "MyRightArmTheGodHand",
+    "author": "Skelerang",
     "version": (0, 0, 1),
     "blender": (2, 80, 0), # I have no clue on compatibility.
     "category": "Import-Export"
@@ -131,7 +131,7 @@ def chunk_pc_cityobjects(cityobjs, main_collection):
     print("Importing Cityobjs")
     new_collection = bpy.data.collections.new('City Objects')
     main_collection.children.link(new_collection)
-    
+
     for i, obj in enumerate(cityobjs):
         # make a cube from the 2 positions
         new_mesh = bpy.data.meshes.new('mesh')
@@ -184,10 +184,16 @@ def read_some_data(context, filepath, ImportProps, ImportMesh, ImportCityObjs):
     header_4                    = read_uint(f, '<')     # Unknown count
 
     f.seek(0x94)
-    header_UnknownCount18       = read_uint(f, '<')     # city objects?
+    header_CityObjCount         = read_uint(f, '<')
     header_19                   = read_uint(f, '<')
     f.read(4)
     header_20                   = read_uint(f, '<')
+    f.read(16)
+    header_doorcount            = read_uint(f, '<') # Probably doors and some other stuff
+    f.read(8)
+    header_door2                = read_uint(f, '<') # 
+    header_door3                = read_uint(f, '<') # 
+    header_door4                = read_uint(f, '<') # 
     f.seek(0xD4)
     header_21                   = read_uint(f, '<') # --- World Pos X? --- #
     header_22                   = read_uint(f, '<') # --- World Pos Y? --- #
@@ -491,32 +497,6 @@ def read_some_data(context, filepath, ImportProps, ImportMesh, ImportCityObjs):
 
     for _ in range((Unk11g_total)):
         f.read(4)
-    #print(hex(f.tell()))
-
-    #print("you were here: ",hex(f.tell()))
-    # Not sure how the first bytes work but this should make sure x is aligned.
-    #f.read(4)
-    #f.seek(f.tell() & 0xfffffff0)
-
-    #print("you are here: ",hex(f.tell()))
-    
-    # size: f(x,y) = 64 + 16(x+2y)
-#    for i in range(chunk_pc_UnknownCount0):
-#        print("got here: ", i, " / ", chunk_pc_UnknownCount0-1, " ", hex(f.tell()))
-#        f.read(50)
-#        x = read_short(f, '<')            
-#        f.read(14)
-#        if x == 0:  # skip the rest
-#            SeekToNextRow(f)
-#        else:
-#            y = read_short(f, '<')
-#            # have read 68 bytes so far
-#            print(16 * (x + 2 * y) - 4)
-#            f.read(16 * (x + 2 * y) - 4)
-
-    #f.seek(0x3c0640)
-
-    #chunk_pc_UnknownCount0 = 1
 
     for i in range(chunk_pc_UnknownCount0):
         #print("got here: ", i+1, " / ", chunk_pc_UnknownCount0, " ", hex(f.tell()))
@@ -533,7 +513,6 @@ def read_some_data(context, filepath, ImportProps, ImportMesh, ImportCityObjs):
         
         # get x
         f.read(2)
-        #print("x get: ", hex(f.tell()))
         x = read_short(f, '<')
         SeekToNextRow(f)
 
@@ -541,29 +520,15 @@ def read_some_data(context, filepath, ImportProps, ImportMesh, ImportCityObjs):
         y = 0
         if check_y:
             f.read(2)
-        #    print("y get: ", hex(f.tell()))
             y = read_short(f, '<')
             SeekToNextRow(f)
 
         #print("x: ", x, ", y: ", y)
 
-        # do x
-        #print("x start: ", hex(f.tell()))
         for _ in range(x):
             f.read(16)
-        
-        # do y
-        #print("y start: ", hex(f.tell()))
         for _ in range(y):
             f.read(16)
-
-
-            #if y != 0 and check_y == False:
-            #    print(y, " ", check_y, " WRONG", hex(f.tell()), " start: ", startoff)
-            #elif y == 0 and check_y == True:
-            #    print(y, " ", check_y, " WRONG", hex(f.tell()), " start: ", startoff)
-            # have read 68 bytes so far
-            #print(16 * (x + 2 * y) - 4)
 
 
 
@@ -577,7 +542,7 @@ def read_some_data(context, filepath, ImportProps, ImportMesh, ImportCityObjs):
 
     #80B
     #print("cityobjs 1/3 - data: ", header_UnknownCount18)
-    for i in range(header_UnknownCount18):
+    for i in range(header_CityObjCount):
         cityobj = SR2_cityobj()
         #f.read(16)
         cityobj.posx = read_float(f, '<')
@@ -589,71 +554,183 @@ def read_some_data(context, filepath, ImportProps, ImportMesh, ImportCityObjs):
         cityobj.pos1z = read_float(f, '<')
         f.read(52)
         cityobjs.append(cityobj)
-        if v:print(i, "/", header_UnknownCount18)
+        if v:print(i, "/", header_CityObjCount)
         
     #print("cityobjs 2/3 - names")
-    for i in range (header_UnknownCount18):
+    for i in range (header_CityObjCount):
         cityobjs[i].name = read_cstr(f)
-        if v: print(i+1, "/", header_UnknownCount18, ": ", cityobjs[i].name)
+        if v: print(i+1, "/", header_CityObjCount, ": ", cityobjs[i].name)
     #print("cityobjs 3/3 - actually import")
     if ImportCityObjs: chunk_pc_cityobjects(cityobjs, main_collection)
     #print("cityobjs DONE!")
 
-#    SeekToNextRow(f)
-#
-#    unknown12size = read_uint(f, '<')
-#    # print(hex(f.tell()))
-#    # for i in range (53):
-#    #     objname = read_cstr(f)
-#    #     print(i, ": ", hex(f.tell()), " ", objname)
-#    #     f.read(2)
-#    #     f.seek(f.tell() & 0xfffffffe)
-#    # print(hex(f.tell()))
-#    f.read(unknown12size)
-#    SeekToNextRow(f)
-#
-#    unknown12b_count = read_uint(f, '<')
-#    for _ in range(unknown12b_count):
-#        f.read(4)
-#    SeekToNextRow(f)
-#
-#    unknown13size = read_uint(f, '<')
-#    f.read(unknown13size)
-#
-#    SeekToNextRow(f)
-#    f.read(16)
-#    
-#    unknown13b_count = read_uint(f, '<')
-#    for _ in range(unknown13b_count):
-#        f.read(28)
-#
-#    f.read(unknown13b_count*28) # floats
-#
-#    unknown13c_count = read_uint(f, '<')
-#
-#    for _ in range(unknown13c_count):
-#        f.read(12) 
-#    for _ in range(unknown13c_count):
-#        f.read(12)
-#    
-#    SeekToNextRow(f)
-#    f.read(32)
-#
-#    for _ in range(header_19):
-#        f.read(48) # World coords?
-#
-#    unknown13d_count = read_uint(f, '<')
-#    f.read(4)
-#    unknown13e_count = read_uint(f, '<')
-#    f.read(4)
-#    for _ in range(unknown13d_count):
-#        f.read(48) # World coords?
-#    for _ in range(unknown13e_count):
-#        f.read(2) # World coords?
-#
-#    SeekToNextRow(f)
-#    #print("number: ", header_19)
-#
+    SeekToNextRow(f)
+
+    unknown12size = read_uint(f, '<')
+    # print(hex(f.tell()))
+    # for i in range (53):
+    #     objname = read_cstr(f)
+    #     print(i, ": ", hex(f.tell()), " ", objname)
+    #     f.read(2)
+    #     f.seek(f.tell() & 0xfffffffe)
+    # print(hex(f.tell()))
+    f.read(unknown12size)
+    SeekToNextRow(f)
+
+    unknown12b_count = read_uint(f, '<')
+    for _ in range(unknown12b_count):
+        f.read(4)
+    SeekToNextRow(f)
+
+    unknown13size = read_uint(f, '<')
+    f.read(unknown13size)
+
+    SeekToNextRow(f)
+    f.read(16)
+    
+    unknown13b_count = read_uint(f, '<')
+    for _ in range(unknown13b_count):
+        f.read(28)
+
+    f.read(unknown13b_count*28) # floats
+
+    unknown13c_count = read_uint(f, '<')
+
+    for _ in range(unknown13c_count):
+        f.read(12) 
+    for _ in range(unknown13c_count):
+        f.read(12)
+    
+    SeekToNextRow(f)
+    f.read(32)
+
+    for _ in range(header_19):
+        f.read(48) # World coords?
+
+    unknown13d_count = read_uint(f, '<')
+    f.read(4)
+    unknown13e_count = read_uint(f, '<')
+    f.read(4)
+    for _ in range(unknown13d_count):
+        f.read(48) # World coords?
+    for _ in range(unknown13e_count):
+        f.read(2) # World coords?
+
+    SeekToNextRow(f)
+    #print("number: ", header_19)
+
+    # --- Doors? --- #
+    doors = []
+    doors_1_tot = 0
+    doors_2_tot = 0
+    for _ in range(header_doorcount):
+        f.read(8)
+        check_x = read_short(f, '<')
+        doors_1 = read_short(f, '<')
+        f.read(2)
+        doors_2 = read_short(f, '<')
+        f.read(12)
+
+        print(check_x, ", ", doors_1, ", ", doors_2)
+
+    print("step 1: ", hex(f.tell()))
+    print(doors_1_tot, "  ", doors_2_tot)
+
+    for _ in range(header_doorcount):
+        f.read(12)
+        if read_uint(f, '<') == 0xffffFFFF:
+            f.read(32)
+            doors.append(1)
+        else:
+            f.read(8)
+            doors.append(0)
+    print("step 2: ", hex(f.tell()))
+
+    for _ in range(header_doorcount):
+        f.read(36)
+    print("step 3: ", hex(f.tell()))
+    for _ in range(header_door2):
+        f.read(4)
+    print("step 4: ", hex(f.tell()))
+    for door in doors:
+        f.read(12 * door)
+    print("step 5: ", hex(f.tell()))
+    for _ in range(header_door4):
+        f.read(8)
+    print("step 6: ", hex(f.tell()))
+    for door in doors:
+        f.read(8 * door)
+    print("step 7: ", hex(f.tell()))
+    for door in doors:
+        doorname = read_cstr(f)
+        doorname1 = read_cstr(f)
+        doorname2 = ""
+        if door == 1:
+            doorname2 = read_cstr(f)
+        print(doorname, doorname1, doorname2)
+
+    SeekToNextRow(f)
+
+    # --- Unknown 14 --- #  # AI stuff?
+    print("\nUnk14: ", hex(f.tell()))
+    Unk14_count = read_uint(f, '<')
+    Unk14_b = read_uint(f, '<')
+    for _ in range(Unk14_count):
+        #f.read(148)
+        #num_e = read_uint(f, '<')
+        #num_f = read_uint(f, '<')
+        #f.read(4)
+        #num_G = read_uint(f, '<')
+        #f.read(12) # floats
+        #num_0 = read_uint(f, '<')
+        #num_1 = read_uint(f, '<')
+        #check_0 = read_uint(f, '<')
+        #check_1 = read_uint(f, '<')
+        #check_2 = read_uint(f, '<')
+        #num_4 = read_uint(f, '<')
+        #check_3 = read_uint(f, '<') # wrong
+        #num_5 = read_uint(f, '<')
+        #f.read(4)
+        #num_6 = read_uint(f, '<')
+        #f.read(16)  # world coord
+        #num_7 = read_uint(f, '<')
+        #f.read(4)
+        #num_8 = read_uint(f, '<')
+        #f.read(4)
+        #num_9 = read_uint(f, '<')
+        #f.read(4)
+        #num_a = read_uint(f, '<')
+        #f.read(4)
+        #num_b = read_uint(f, '<')
+        #num_c = read_uint(f, '<')
+        #f.read(12)
+        #check_4 = read_uint(f, '<')
+        #check_5 = read_uint(f, '<')
+        #num_d = read_uint(f, '<')
+
+        checks = []
+        for _ in range(37):
+            temp = read_uint(f, '<')
+            checks.append(str(temp).zfill(10))
+
+        print(checks)
+
+        #print(num_e, " ", num_f, " ", num_G, " ", num_0, " ", num_1, " ", num_4, " ", num_5, " ", num_6, " ", num_7, " ",
+        #num_8, " ", num_9, " ", num_a, " ", num_b, " ", num_c, " ", num_d, " " )
+
+    for _ in range(Unk14_count):
+        unk14name = read_cstr(f)
+        #print(unk14name)
+
+    SeekToNextRow(f)
+
+    for _ in range(Unk14_count):
+        read_float(f, '<')
+
+    SeekToNextRow(f)
+
+
+
     timer = time.time() - timer
     print("end, ", hex(f.tell()), "\nfinished in ",timer, " seconds")
     return {'FINISHED'}
