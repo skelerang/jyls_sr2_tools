@@ -12,6 +12,8 @@ import os.path
 import time
 from bpy.props import CollectionProperty
 
+import utils.g_chunker
+
 def read_byte(file_object, endian = '>'):
     data = struct.unpack(endian+'B', file_object.read(1))[0]
     return data
@@ -361,6 +363,7 @@ def read_some_data(context, filepath, ImportProps, ImportMesh, ImportCityObjs):
 
     # --- Header --- #
     model0_list = []
+    g_chunk_model_list = []
     if v:print("Models 0 header0:    ", hex(f.tell()))
     # 24B
     for _ in range(chunk_pc_Model0Count):
@@ -375,15 +378,33 @@ def read_some_data(context, filepath, ImportProps, ImportMesh, ImportCityObjs):
     # 16B
     for mesh in model0_list:
         for _ in range(mesh.header1count):
-            mesh.unknown1 = read_uint(f, '<')
-            mesh.vertCount = read_uint(f, '<')
-            f.read(4)   # FF bytes
-            f.read(4)   # null bytes
+            #mesh.unknown1 = read_uint(f, '<')
+            #mesh.vertCount = read_uint(f, '<')
+            
+            meshinfo = []
+            # g_mesh structure:
+            # [
+            #   [unknown1]
+            #   [unknown2]
+            #   [vertcount]
+            # ]
+            meshinfo.append(read_short(f, '<'))   # unk1
+            meshinfo.append(read_short(f, '<'))   # unk2
+            meshinfo.append(read_uint(f, '<'))    # vertc
+            f.read(4)   # FF
+            f.read(4)   # null
+
+            g_chunk_model_list.append(meshinfo)
+
+    gchunk2mesh("", g_chunk_model_list)
+
+
+
     SeekToNextRow(f)
 
     # --- Mesh Data --- #
     if v:print("Models 0 mesh data:  ", hex(f.tell()))
-    for mesh in model0_list:
+    for mesh in model0_lsist:
         if mesh.unknown0 == 7:
             mesh.vertices = chunk_pc_mesh_vertices(f, mesh.vertCount)
             SeekToNextRow(f)
@@ -393,6 +414,9 @@ def read_some_data(context, filepath, ImportProps, ImportMesh, ImportCityObjs):
     # --- Import --- #
     if(ImportMesh): import_meshes(model0_list, main_collection)
 
+    timer = time.time() - timer
+    print("end, ", hex(f.tell()), "\nfinished in ",timer, " seconds")
+    return {'FINISHED'}
 
 # --- Unknown 11 --- #
     #print("Unknown 11:          ", hex(f.tell()))
@@ -713,7 +737,7 @@ def read_some_data(context, filepath, ImportProps, ImportMesh, ImportCityObjs):
             temp = read_uint(f, '<')
             checks.append(str(temp).zfill(10))
 
-        print(checks)
+        #print(checks)
 
         #print(num_e, " ", num_f, " ", num_G, " ", num_0, " ", num_1, " ", num_4, " ", num_5, " ", num_6, " ", num_7, " ",
         #num_8, " ", num_9, " ", num_a, " ", num_b, " ", num_c, " ", num_d, " " )
