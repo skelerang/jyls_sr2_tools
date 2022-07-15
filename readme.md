@@ -10,7 +10,11 @@ The chunk_pc file is a loadable part of the world. It is what is needed for a ph
 Script usage:  
 ```python path/to/script.py path/to/chunkfile.chunk_pc```
 
+Use this to get textures: https://www.saintsrowmods.com/forum/threads/saints-row-2-chunks-texture-tool.12877/  
+Put textures to ./textures/ folder relative to mtl file.
+
 Python 3.10 or newer required
+
 
 
 
