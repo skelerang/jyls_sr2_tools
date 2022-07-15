@@ -12,17 +12,17 @@ def write_byte(n, file_object, endian = '>'):
     file_object.write(data)
 
 def read_short(file_object, endian = '>'):
-    data = struct.unpack(endian+'H', file_object.read(2))[0]
+    data = struct.unpack(endian+'h', file_object.read(2))[0]
     return data
 def write_short(n, file_object, endian = '>'):
-    data = struct.pack(endian+'H', n)
+    data = struct.pack(endian+'h', n)
     file_object.write(data)
 
-def read_uint(file_object, endian = '>'):
-    data = struct.unpack(endian+'I', file_object.read(4))[0]
+def read_ushort(file_object, endian = '>'):
+    data = struct.unpack(endian+'H', file_object.read(2))[0]
     return data
-def write_uint(n, file_object, endian = '>'):
-    data = struct.pack(endian+'I', n)
+def write_ushort(n, file_object, endian = '>'):
+    data = struct.pack(endian+'H', n)
     file_object.write(data)
 
 def read_int(file_object, endian = '>'):
@@ -30,6 +30,13 @@ def read_int(file_object, endian = '>'):
     return data
 def write_int(n, file_object, endian = '>'):
     data = struct.pack(endian+'i', n)
+    file_object.write(data)
+
+def read_uint(file_object, endian = '>'):
+    data = struct.unpack(endian+'I', file_object.read(4))[0]
+    return data
+def write_uint(n, file_object, endian = '>'):
+    data = struct.pack(endian+'I', n)
     file_object.write(data)
 
 def read_float(file_object, endian = '>'):

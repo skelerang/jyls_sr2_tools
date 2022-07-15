@@ -2,7 +2,6 @@
 import sys
 import os.path
 import time
-import random
 
 import utils.g_chunker
 import utils.modelhandler
@@ -47,7 +46,7 @@ def chunk_pc_mesh_vertices(f, count):
 def chunk_pc_mesh_faces(f, count):
     faces = []
     for i in range (count-2):
-        face = [read_short(f, '<'),read_short(f, '<'),read_short(f, '<')]
+        face = [read_ushort(f, '<'),read_ushort(f, '<'),read_ushort(f, '<')]
         if(i < count-3):
             f.seek(-4,os.SEEK_CUR)
         faces.append(face)
@@ -56,7 +55,7 @@ def chunk_pc_mesh_faces(f, count):
 def chunk_pc_mesh2_faces(f, count):
     faces = []
     for _ in range (count):
-        face = [read_short(f, '<'),read_short(f, '<'),read_short(f, '<')]
+        face = [read_ushort(f, '<'),read_ushort(f, '<'),read_ushort(f, '<')]
         faces.append(face)
     return(faces)
 
@@ -254,8 +253,8 @@ def main(filepath, ImportMesh):
     for _ in range(chunk_pc_Model0Count):
         mesh = chunk_pc_model0_mesh()
 
-        mesh.unknown0 = read_short(f, '<')      # Can only be either 7 or 0?? If 0, skip the mesh
-        mesh.header1count = read_short(f, '<')
+        mesh.unknown0 = read_ushort(f, '<')      # Can only be either 7 or 0?? If 0, skip the mesh
+        mesh.header1count = read_ushort(f, '<')
         mesh.indexCount = read_uint(f, '<')
         f.read(8)   # FF bytes
         f.read(4)   # null bytes
@@ -279,8 +278,8 @@ def main(filepath, ImportMesh):
 
             # g_chunk model
             else:
-                g_chunk_unk1s.append(read_short(f, '<'))    # unk1
-                g_chunk_vsizes.append(read_short(f, '<'))   # vert length
+                g_chunk_unk1s.append(read_ushort(f, '<'))    # unk1
+                g_chunk_vsizes.append(read_ushort(f, '<'))   # vert length
                 g_chunk_vcounts.append(read_uint(f, '<'))   # vert count
                 f.read(4)   # FF
                 f.read(4)   # null
@@ -299,10 +298,9 @@ def main(filepath, ImportMesh):
 # --- Materials --- #
     chunk_materials = []
 
-    #print("Unknown 11:          ", hex(f.tell()))
-    chunk_shader_count = read_uint(f, '<') # Matches Texture List length? Shaders??
+    chunk_material_count = read_uint(f, '<') # Matches Texture List length? Shaders??
     SeekToNextRow(f)
-    chunk_shader_values = read_uint(f, '<')
+    chunk_shader_floats_count = read_uint(f, '<')
     f.read(8)
     chunk_pc_UnknownCount11c = read_uint(f, '<')
     chunk_pc_Unknown11c = read_uint(f, '<')
@@ -322,53 +320,51 @@ def main(filepath, ImportMesh):
     Unk11f2_total = 0
     
     #24B
-    for i in range(chunk_shader_count):
+    for i in range(chunk_material_count):            
+        mat = chunk_material()
         f.read(8)
         
         f.read(4)
 
-        _texcount = read_short(f, '<')
-        if _texcount != 0:
-            Unk11d_total += _texcount
+        Unk11d = read_ushort(f, '<')
+        if Unk11d != 0:
+            Unk11d_total += Unk11d
             Unk11d_count += 1
-            if _texcount % 2 != 0:
+            if Unk11d % 2 != 0:
                 Unk11d_odds += 1
-
-        Unk11f = read_short(f, '<')
-        if Unk11f != 0:
-            Unk11f_total += Unk11f
-            Unk11f_count += 1
         
+        mat.texcount = read_ushort(f, '<')
+        if mat.texcount != 0:
+            Unk11f_total += mat.texcount
+            Unk11f_count += 1
+
         f.read(2)
 
-        Unk11f2 = read_short(f, '<')
+        Unk11f2 = read_ushort(f, '<')
         if Unk11f2 != 0:
             Unk11f2_total += Unk11f2
-            
-            mat = chunk_material()
-            mat.texcount = _texcount
-            chunk_materials.append(mat)
 
+        chunk_materials.append(mat)
         f.read(4)
 
     # --- Shaders --- #
     #6B
     for _ in range(Unk11d_total):   # Bit flags, maybe? Messing with these toggled uv repeat on for ultor flags.
-        read_short(f, '<')
-        read_short(f, '<')
-        read_short(f, '<')
+        read_ushort(f, '<')
+        read_ushort(f, '<')
+        read_ushort(f, '<')
 
     #2B
     for _ in range(Unk11d_odds):
-        read_short(f, '<')
+        read_ushort(f, '<')
 
     # Byte alignment 4
     if f.tell() & 0xfffffffc != f.tell():
         f.read(4)
         f.seek(f.tell() & 0xfffffffc)
-    
+
     #16B
-    for _ in range(chunk_shader_count): # Messing with these break shaders.
+    for _ in range(chunk_material_count): # Messing with these break shaders.
         f.read(4)
         f.read(4)
         f.read(4)
@@ -376,25 +372,29 @@ def main(filepath, ImportMesh):
     SeekToNextRow(f)
 
     #4B
-    for _ in range(chunk_shader_values):
+    for _ in range(chunk_shader_floats_count):
         read_float(f, '<')  # Mostly colors, sometimes affects scrolling texture speed and probably more things.
 
     # 64B
     for i, mat in enumerate(chunk_materials):
         mat.textures = []
+        mat.texflags = []
         for ii in range(16):
-            tex_id = read_uint(f, '<')
+            tex_id = read_ushort(f, '<')
+            tex_fl = read_ushort(f, '<')
 
-            if tex_id == 0xffffFFFF:
+            if ii == mat.texcount:
                 f.read((15-ii) * 4)
                 break
+            
             mat.textures.append(tex_id)
+            mat.texflags.append(tex_fl)
 
     Unk11g_total = 0
     for _ in range((chunk_pc_UnknownCount11c)):
         f.read(8)
-        Unk11g_total += read_short(f, '<')
-        read_short(f, '<')  # no visible effect
+        Unk11g_total += read_ushort(f, '<')
+        read_ushort(f, '<')  # no visible effect
         f.read(4)
 
     for _ in range((Unk11g_total)):
@@ -415,8 +415,8 @@ def main(filepath, ImportMesh):
         SeekToNextRow(f)
         
         # get x
-        read_short(f, '<')  # short
-        gmodel.xcount       = read_short(f, '<')
+        read_ushort(f, '<')  # short
+        gmodel.xcount       = read_ushort(f, '<')
         read_uint(f,'<')    # ff flag
         gmodel.unkx         = read_uint(f, '<')
         SeekToNextRow(f)
@@ -425,7 +425,7 @@ def main(filepath, ImportMesh):
         gmodel.ycount = 0
         if check_y:
             f.read(2)       # short
-            gmodel.ycount   = read_short(f, '<')
+            gmodel.ycount   = read_ushort(f, '<')
             f.read(4)       # ff flag
             gmodel.unky     = read_uint(f, '<')
             SeekToNextRow(f)
@@ -434,11 +434,11 @@ def main(filepath, ImportMesh):
         for _ in range(gmodel.xcount):
             mesh = g_chunk_model_mesh0()
 
-            mesh.vert_bank          = read_uint(f, '<')
-            mesh.index_offset        = read_uint(f, '<')
-            mesh.vert_offset  = read_uint(f, '<')
-            mesh.index_count         = read_short(f, '<')
-            mesh.mat            = read_short(f, '<')
+            mesh.vert_bank      = read_uint(f, '<')
+            mesh.index_offset   = read_uint(f, '<')
+            mesh.vert_offset    = read_uint(f, '<')
+            mesh.index_count    = read_ushort(f, '<')
+            mesh.mat            = read_ushort(f, '<')
 
             gmodel.meshes0.append(mesh)
 
@@ -454,10 +454,16 @@ def main(filepath, ImportMesh):
 
     if not os.path.exists(export_dir): os.mkdir(export_dir)
 
+    # example: sr2_chunk102.mtl
+    export_mtl_name = export_mtl_name = os.path.basename(filepath).split('.', 1)[0] + ".mtl"
+    
+    # example: /path/to/sr2_chunk102/sr2_chunk102.mtl
+    export_mtl_path = os.path.join(export_dir, export_mtl_name)
+
     for mesh in models:
-        export_name = os.path.join(export_dir, "g_mdl_" + str(temp_i) + ".obj")
+        export_obj_name = os.path.join(export_dir, "g_mdl_" + str(temp_i) + ".obj")
         #print("exporting: " + export_name)
-        utils.modelhandler.export(mesh, export_name)
+        utils.modelhandler.export_obj(mesh, export_obj_name, export_mtl_name)
         temp_i +=1
 
 

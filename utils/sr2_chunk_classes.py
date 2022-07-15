@@ -1,6 +1,7 @@
 class chunk_material:
     texcount: int
-    textures: [] # up to 16 uints.
+    textures: [] # up to 16 ushorts.
+    texflags: [] # probably? 2B for each tex.
 
 class chunk_city_object:
     pos: ()
