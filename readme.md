@@ -5,7 +5,8 @@ The chunk_pc file is a loadable part of the world. It is what is needed for a ph
 
 **sr2_chunk_extract_gmodels.py** extracts obj from g_chunk  
 **sr2_chunk_extract_materials.py** extracts mtl from chunk  
-**sr2_chunk_extract_texturelist.py** extracts a list of textures used in the chunk.
+**sr2_chunk_extract_texturelist.py** extracts a list of textures used in the chunk.  
+**sr2_chunk_replace_gmodels.py** rebuild g_chunk from extracted models (and a very tiny bit of the old one).
 
 Script usage:  
 ```python path/to/script.py path/to/chunkfile.chunk_pc```
