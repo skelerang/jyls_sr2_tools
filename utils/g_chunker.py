@@ -1,9 +1,10 @@
 # --- Jyl's SR2 g_chunk utility --- #
 #
 
+import os.path
+
 from utils.binny import *
 from utils.sr2_chunk_classes import *
-from utils.modelhandler import mdl_export_format
 
 if __name__ == '__main__':
     print("Run the main chunk importer instead!")
@@ -135,5 +136,145 @@ def gchunk2mesh(filepath, vsizes, vcounts, icount, gmodels):
 
     # --- Part 2 --- #
     # You tell me ¯\_(ツ)_/¯
-
+    f.close()
     return models
+
+def get_part2off(filepath, vsizes, vcounts, icount):
+
+    f = open(filepath, 'r+b')
+    vblob_count = len(vsizes)
+
+    # --- Vertices --- #
+    for i in range(vblob_count):
+        f.seek(vsizes[i] * vcounts[i], os.SEEK_CUR)
+        SeekToNextRow(f)
+
+    # --- Indices --- #
+    f.seek(icount * 2, os.SEEK_CUR)
+    SeekToNextRow(f)
+
+    f.close()
+    return f.tell()
+
+def split_part2(filepath, vsizes, vcounts, icount):
+
+    f = open(filepath, 'r+b')
+
+    # --- Skip part1 --- #
+    vblob_count = len(vsizes)
+    for i in range(vblob_count):
+        f.seek(vsizes[i] * vcounts[i], os.SEEK_CUR)
+        SeekToNextRow(f)
+    f.seek(icount * 2, os.SEEK_CUR)
+    SeekToNextRow(f)
+    
+    # --- Save part2 --- #
+    filepath2 = filepath + ".part2"
+    f_p2 = open(filepath2, 'wb')
+    f_p2.write(f.read())
+
+    f_p2.close()
+    f.close()
+
+
+
+# input mesh structure
+# [ mesh
+#     [(x, y, z, u, v), ...], # verts
+#     [(0, 1, 2), ...], # triangles
+#     0 # mat
+# ]
+
+def build_part1(filepath, models):
+    f = open(filepath + ".part1", 'wb')
+
+    vert_banks = []
+    index_offsets = []
+    vert_offsets = []
+    index_counts = []
+    materials = []
+    verts_total = 0
+
+    # --- Vert Blob --- #
+    for model in models:
+        for mesh in model:
+            for vert in mesh[0]:
+                write_float(vert[0], f, '<')    # x
+                write_float(vert[1], f, '<')    # y
+                write_float(vert[2], f, '<')    # z
+                write_uint(0x7FFF7F7F, f)       # dunno what this is.
+                write_ushort(int(vert[3] * 256), f, '<')     # u
+                write_ushort(int(vert[4] * 256), f, '<')     # v
+            vert_offsets.append(verts_total)
+            materials.append(mesh[2])
+            verts_total += len(mesh[0])
+    
+    # byte alignment
+    while True:
+        if f.tell() & 0xfffffff0 == f.tell():
+            break
+        write_byte(0, f)
+
+    # --- Index buffer blob --- #
+    # Index buffer is compressed: if successive tris share an edge,
+    # they are represented with just 4 indices instead of 6
+    # This doesn't even try to optimise the order but that shouldn't matter.
+    buffer_blob = []
+    index_off = 0
+    for model in models:
+        for mesh in model:
+            index_offsets.append(index_off)
+            buffer = []
+            index_count = 0
+            for i, tri in enumerate(mesh[1]):
+
+                A = tri[0]
+                B = tri[1]
+                C = tri[2]
+
+                if i == 0:
+                    buffer.append(A)
+                    buffer.append(B)
+                    buffer.append(C)
+                    index_count += 3
+
+                else:
+                    # Best case, new tri with just one index
+                    if buffer[-2] == A and buffer[-1] == B:
+                        buffer.append(C)
+                        index_count += 1
+
+                    # Neutral case, new tri takes 3 indices  
+                    elif buffer[-1] == A:
+                        # same vert twice makes degenerate tris, which are ignored
+                        # so the previous legit tri and this don't mix
+                        buffer.append(A)
+                        buffer.append(B)
+                        buffer.append(C)
+                        index_count += 3
+
+                    # Worst case, new tri takes 5 indices. It's probably rare enough to offset the cost, even unoptimized.
+                    else:
+                        buffer.append(buffer[-1]) # Make degen triangles
+                        buffer.append(A) # Make degen triangles again
+                        buffer.append(A)
+                        buffer.append(B)
+                        buffer.append(C)
+                        index_count += 5
+            
+            for index in buffer:
+                buffer_blob.append(index)
+
+            index_counts.append(index_count)
+            index_off += index_count
+
+    for index in buffer_blob:
+        write_short(index, f, '<')
+    
+    # byte alignment
+    while True:
+        if f.tell() & 0xfffffff0 == f.tell():
+            break
+        write_byte(0, f)
+    
+    return [vert_banks, index_offsets, vert_offsets, index_counts, materials, verts_total]

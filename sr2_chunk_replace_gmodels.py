@@ -1,6 +1,6 @@
-
 import sys
 import os.path
+import shutil
 import time
 
 import utils.g_chunker
@@ -65,7 +65,11 @@ def main(filepath, ImportMesh):
     print()
     print("Opening file: ", filepath)
     f = open(filepath, 'rb')
-    g_chunk_filepath = os.path.splitext(filepath)[0]+".g_chunk_pc"
+    dirname = os.path.dirname(filepath)
+    basename = os.path.basename(filepath)
+    g_filepath = os.path.splitext(filepath)[0]+".g_chunk_pc"
+    g_basename = os.path.basename(g_filepath)
+
 
     export_dir = os.path.splitext(filepath)[0]
 
@@ -166,7 +170,6 @@ def main(filepath, ImportMesh):
         f.read(100)
     SeekToNextRow(f)
 
-
 # --- Unknown4 ---#
     # 52B
     for _ in range(chunk_pc_UnknownCount4):
@@ -249,6 +252,8 @@ def main(filepath, ImportMesh):
     # --- Header --- #
     model0_list = []
     
+    OFF_MODELHEADER = f.tell()
+
     # 20B
     for _ in range(chunk_pc_Model0Count):
         mesh = chunk_pc_model0_mesh()
@@ -403,6 +408,7 @@ def main(filepath, ImportMesh):
         f.read(4)   # no visible changes
 
     # --- g_chunk models --- #
+    OFF_GMODELS = f.tell()
     gmodels = []
     for i in range(g_chunk_modelcount):
         gmodel = g_chunk_model()
@@ -449,63 +455,165 @@ def main(filepath, ImportMesh):
             read_uint(f, '<') # no effect?
 
         gmodels.append(gmodel)
-    # pull models from g_chunk
-    models = utils.g_chunker.gchunk2mesh(g_chunk_filepath, g_chunk_vsizes, g_chunk_vcounts, model0_list[0].indexCount, gmodels)
 
-    temp_i = 0
-
-    if not os.path.exists(export_dir): os.mkdir(export_dir)
-
-    # example: sr2_chunk102.mtl
-    export_mtl_name = export_mtl_name = os.path.basename(filepath).split('.', 1)[0] + ".mtl"
+    tempmeshes = [
+        [
+            [
+                [
+                    (1,2,3,4,5),
+                    (1,2,3,4,5),
+                    (1,2,3,4,5),
+                    (1,2,3,4,5),
+                    (1,2,3,4,5),
+                ],
+                [
+                    (0,1,2),
+                    (1,2,3),
+                    (2,3,4),
+                    (3,4,5),
+                ],
+            ],
+            [
+                [
+                    (3,4,5,6,7),
+                    (3,4,5,6,7),
+                    (3,4,5,6,7),
+                    (3,4,5,6,7),
+                    (3,4,5,6,7),
+                    (3,4,5,6,7),
+                ],
+                [
+                    (0,1,2),
+                    (1,2,3),
+                    (3,4,5),
+                    (4,5,6),
+                ],
+            ]
+        ],
+    ]
     
-    # example: /path/to/sr2_chunk102/sr2_chunk102.mtl
-    export_mtl_path = os.path.join(export_dir, export_mtl_name)
-
-    for mesh in models:
-        export_obj_name = os.path.join(export_dir, "g_mdl_" + str(temp_i) + ".obj")
-        #print("exporting: " + export_name)
-        utils.modelhandler.export_obj(mesh, export_obj_name, export_mtl_name)
-        temp_i +=1
+    meshses = []
+    for fname in os.listdir(export_dir):
+        if fname.endswith(".obj"):
+            meshses.append(utils.modelhandler.import_obj(os.path.join(export_dir, fname)))
 
 
-    # --- Cullbox --- #
-    cullboxes = []
+    #testmodel = utils.modelhandler.import_obj("/home/jyl/Desktop/Rayman.obj")
+    #testmodel = utils.modelhandler.import_obj("/home/jyl/Desktop/untitled.obj")
+    #tempmeshes = []
+    #tempmeshes.append(testmodel)
+    utils.g_chunker.split_part2(g_filepath, g_chunk_vsizes, g_chunk_vcounts, model0_list[0].indexCount)
+    gdata = utils.g_chunker.build_part1(g_filepath, meshses)
 
-    #80B
-    for i in range(header_cullboxcount):
-        cullbox = chunk_cullbox()
 
-        x0 = read_float(f, '<') # box max
-        y0 = read_float(f, '<')
-        z0 = read_float(f, '<')
 
-        f.read(4)   # null
+    new_chunk_path = os.path.join(dirname, "new_" + basename)
+    new_g_chunk_path = os.path.join(dirname, "new_" + g_basename)
 
-        x1 = read_float(f, '<') # box min
-        y1 = read_float(f, '<')
-        z1 = read_float(f, '<')
+    shutil.copy(filepath, new_chunk_path)
+    new_chunk = open(new_chunk_path, 'r+b')
+    new_g_chunk = open(new_g_chunk_path, 'wb')
 
-        cullbox.box      = (x0, y0, z0, x1, y1, z1)
-        cullbox.distance = read_float(f, '<')
-        f.read(16)
-        read_uint(f, '<')   # Bit flags. 11th bit will fix transparent textures.
-        read_uint(f, '<')   # Value is always 2^n. If too small the model doesn't appear.
-        f.read(8)
+    part1 = open(g_filepath + ".part1", 'rb')
+    part2 = open(g_filepath + ".part2", 'rb')
+    new_g_chunk.write(part1.read())
+    new_g_chunk.write(part2.read())
+    part1.close()
+    part2.close()
+    os.remove(g_filepath + ".part1")
+    os.remove(g_filepath + ".part2")
 
-        cullbox.model    = read_uint(f, '<') # gchunk_model
+    total_indices = 0
+    for count in gdata[3]:
+        total_indices += count
+    total_verts = gdata[5]
+    print(total_indices, total_verts)
 
-        f.read(12)
+    new_chunk.seek(OFF_MODELHEADER)
 
-        cullboxes.append(cullbox)
+
+    for i, mesh in enumerate(model0_list):
+        new_chunk.read(2) # mesh.unknown0
+        new_chunk.read(2) # mesh.header1count
+        if i == 0:
+            write_uint(total_indices, new_chunk, '<')#indexCount
+        else:
+            new_chunk.read(4)
+        new_chunk.read(8)   # FF bytes
+        new_chunk.read(4)   # null bytes
+
+
+    for i, mesh in enumerate(model0_list):
+        for ii in range(mesh.header1count):
+            
+            # physmodel
+            if mesh.unknown0 == 7:
+                pass
+                #mesh.unknown1 = read_uint(f, '<')
+                #mesh.vertCount = read_uint(f, '<')
+                #f.read(4)   # FF
+                #f.read(4)   # null
+
+            # g_chunk model
+            else:
+                # vtypes: This somehow tells what types of data the vert contains?
+                # null for physmodels (which obviously don't have any extra data like uv's)
+                if i == 0:
+                    if ii == 0:
+                        write_ushort(256, new_chunk, '<')   #?? vert data type
+                        write_ushort(20, new_chunk, '<')    # v length
+                        write_uint(total_verts, new_chunk, '<')
+                        new_chunk.read(4)   # FF
+                        new_chunk.read(4)   # null
+                    else:
+                        write_ushort(0, new_chunk, '<')
+                        write_ushort(0, new_chunk, '<')
+                        write_uint(0, new_chunk, '<')
+                        new_chunk.read(4)   # FF
+                        new_chunk.read(4)   # null
+                
+    SeekToNextRow(new_chunk)
+
+    new_chunk.seek(OFF_GMODELS)
+    imesh = 0
+    for gmodel in gmodels:
+
+        check_y = False
+
+        new_chunk.read(40)
+        SeekToNextRow(new_chunk)
         
-    for i in range (header_cullboxcount):
-        cullboxes[i].name = read_cstr(f)
+        new_chunk.read(12)
+        SeekToNextRow(new_chunk)
 
-    SeekToNextRow(f)
+        if gmodel.ycount > 0:
+            new_chunk.read(12)
+            SeekToNextRow(new_chunk)
+        
+        for i, mesh in enumerate(gmodel.meshes0):
+            print("patching entry in chunk...",imesh)
+            write_uint(0, new_chunk, '<')#mesh.vert_bank      = read_uint(f, '<')
+            write_uint(gdata[1][imesh], new_chunk, '<')#mesh.index_offset   = read_uint(f, '<')
+            write_uint(gdata[2][imesh], new_chunk, '<')#mesh.vert_offset    = read_uint(f, '<')
+            write_ushort(gdata[3][imesh], new_chunk, '<')#mesh.index_count    = read_ushort(f, '<')
+            write_ushort(gdata[4][imesh], new_chunk, '<')#mesh.mat            = read_ushort(f, '<')
+            imesh += 1
+
+        for _ in range(gmodel.ycount):
+            new_chunk.read(16)        # null?
+            #read_uint(f, '<') # no effect?
+
+    # if not os.path.exists(export_dir): os.mkdir(export_dir)
+
+    #export_obj_name = "/home/jyl/Desktop/Rayman_test.obj"
+    #export_obj_name = "/home/jyl/Desktop/cube.obj"
+    #print("exporting: " + export_name)
+    #utils.modelhandler.export_obj_v2(testmodel, export_obj_name, "")
 
     timer = time.time() - timer
-    print("end, ", hex(f.tell()), "\nfinished in ",timer, " seconds")
+    print("end, ", hex(new_chunk.tell()), "\nfinished in ",timer, " seconds")
+    f.close()
+    new_chunk.close()
     return {'FINISHED'}
 
 import_models = False
