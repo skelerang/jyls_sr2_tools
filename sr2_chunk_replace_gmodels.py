@@ -556,11 +556,9 @@ def main(filepath, ImportMesh):
 
             # g_chunk model
             else:
-                # vtypes: This somehow tells what types of data the vert contains?
-                # null for physmodels (which obviously don't have any extra data like uv's)
                 if i == 0:
                     if ii == 0:
-                        write_ushort(256, new_chunk, '<')   #?? vert data type
+                        write_ushort(258, new_chunk, '<')   #?? vert data type
                         write_ushort(20, new_chunk, '<')    # v length
                         write_uint(total_verts, new_chunk, '<')
                         new_chunk.read(4)   # FF
