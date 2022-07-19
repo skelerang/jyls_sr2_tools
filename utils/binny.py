@@ -66,3 +66,9 @@ def SeekToNextRow(f):    # Byte alignment seek so least significant number is 0 
         offset += 16                    # get to next row
         offset = offset & 0xfffffff0    # get to beginning of this row
         f.seek(offset)
+
+def WriteToNextRow(f):    # Byte alignment fill zeroes
+    while True:
+        if f.tell() & 0xfffffff0 == f.tell():
+            break        
+        write_byte(0, f)

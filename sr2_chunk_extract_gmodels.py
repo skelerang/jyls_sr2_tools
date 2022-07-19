@@ -403,38 +403,47 @@ def main(filepath, ImportMesh):
         f.read(4)   # no visible changes
 
     # --- g_chunk models --- #
-    gmodels = []
+    gmodel_entries = []
     for i in range(g_chunk_modelcount):
-        gmodel = g_chunk_model()
+        gmodel = g_model_entry()
 
+        check_x = False
         check_y = False
 
-        f.read(24)  # 6 floats, a box?
-        f.read(4)   # null?
-        f.read(4)   # always uint 1?
-        f.read(4)   # unk ff flag
-        if read_uint(f, '<') == 0xffffFFFF: check_y = True
+        gmodel.bbox = (
+            read_float(f, '<'), # x
+            read_float(f, '<'), # y
+            read_float(f, '<'), # z
+            read_float(f, '<'), # x
+            read_float(f, '<'), # y
+            read_float(f, '<'), # z
+        )
+        gmodel.unk0 = read_uint(f, '<')
+        gmodel.unk1 = read_uint(f, '<')
+        
+        if read_uint(f, '<') == 0: gmodel.mesh0_count = 0
+        else: check_x = True
+        if read_uint(f, '<') == 0: gmodel.y_count = 0
+        else: check_y = True
         SeekToNextRow(f)
         
-        # get x
-        read_ushort(f, '<')  # short
-        gmodel.xcount       = read_ushort(f, '<')
-        read_uint(f,'<')    # ff flag
-        gmodel.unkx         = read_uint(f, '<')
-        SeekToNextRow(f)
-
-        # get y
-        gmodel.ycount = 0
-        if check_y:
-            f.read(2)       # short
-            gmodel.ycount   = read_ushort(f, '<')
-            f.read(4)       # ff flag
-            gmodel.unky     = read_uint(f, '<')
+        if check_x:
+            gmodel.mesh0_unk0   = read_ushort(f, '<')
+            gmodel.mesh0_count  = read_ushort(f, '<')
+            gmodel.mesh0_unk1   = read_uint(f, '<') # ff flag
+            gmodel.mesh0_unk2   = read_uint(f, '<')
             SeekToNextRow(f)
 
-        gmodel.meshes0 = []
-        for _ in range(gmodel.xcount):
-            mesh = g_chunk_model_mesh0()
+        if check_y:
+            gmodel.y_unk0       = read_ushort(f, '<')
+            gmodel.y_count      = read_ushort(f, '<')
+            gmodel.y_unk1       = read_uint(f, '<') # ff flag
+            gmodel.y_unk2       = read_uint(f, '<')
+            SeekToNextRow(f)
+
+        gmodel.mesh0_entries = []
+        for _ in range(gmodel.mesh0_count):
+            mesh = g_model_mesh0_entry()
 
             mesh.vert_bank      = read_uint(f, '<')
             mesh.index_offset   = read_uint(f, '<')
@@ -442,15 +451,20 @@ def main(filepath, ImportMesh):
             mesh.index_count    = read_ushort(f, '<')
             mesh.mat            = read_ushort(f, '<')
 
-            gmodel.meshes0.append(mesh)
+            gmodel.mesh0_entries.append(mesh)
 
-        for _ in range(gmodel.ycount):
-            f.read(12)        # null?
-            read_uint(f, '<') # no effect?
+        for _ in range(gmodel.y_count):
+            y = g_model_y_entry()
+            y.unk0 = read_uint(f, '<')
+            y.unk1 = read_uint(f, '<')
+            y.unk2 = read_uint(f, '<')
+            y.unk3 = read_ushort(f, '<')
+            y.mat = read_ushort(f, '<')
 
-        gmodels.append(gmodel)
+        gmodel_entries.append(gmodel)
+
     # pull models from g_chunk
-    models = utils.g_chunker.gchunk2mesh(g_chunk_filepath, g_chunk_vsizes, g_chunk_vcounts, model0_list[0].indexCount, gmodels)
+    models = utils.g_chunker.gchunk2mesh(g_chunk_filepath, g_chunk_vsizes, g_chunk_vcounts, model0_list[0].indexCount, gmodel_entries)
 
     temp_i = 0
 

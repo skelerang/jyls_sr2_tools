@@ -104,7 +104,7 @@ def gchunk2mesh(filepath, vsizes, vcounts, icount, gmodels):
 
     for i, gmodel in enumerate(gmodels):
         model = []
-        for gmesh in gmodel.meshes0:
+        for gmesh in gmodel.mesh0_entries:
             mesh = [[],[],[],0]   # [verts], [uvs], [faces], material
             gmesh.vert_count = 0
 
@@ -185,19 +185,22 @@ def split_part2(filepath, vsizes, vcounts, icount):
 #     0 # mat
 # ]
 
-def build_part1(filepath, models):
+def build_part1(filepath, models, gmodel_entries):
     f = open(filepath + ".part1", 'wb')
 
-    vert_banks = []
-    index_offsets = []
-    vert_offsets = []
-    index_counts = []
-    materials = []
+    # vert_banks = []
+    # index_offsets = []
+    # vert_offsets = []
+    # index_counts = []
+    # materials = []
     verts_total = 0
 
     # --- Vert Blob --- #
-    for model in models:
-        for mesh in model:
+    for i, model in enumerate(models):
+        entries = []
+        for ii, mesh in enumerate(model):
+            entry = g_model_mesh0_entry()
+            entry.vert_bank = 0
             for vert in mesh[0]:
                 write_float(vert[0], f, '<')    # x
                 write_float(vert[1], f, '<')    # y
@@ -205,9 +208,14 @@ def build_part1(filepath, models):
                 write_uint(0x7FFF7F7F, f)       # dunno what this is.
                 write_ushort(int(vert[3] * 256), f, '<')     # u
                 write_ushort(int(vert[4] * 256), f, '<')     # v
-            vert_offsets.append(verts_total)
-            materials.append(mesh[2])
-            verts_total += len(mesh[0])
+            entry.vert_offset = verts_total
+            entry.vert_count = len(mesh[0])
+            entry.mat = mesh[2]
+            #vert_offsets.append(verts_total)
+            #materials.append(mesh[2])
+            verts_total += entry.vert_count
+            entries.append(entry)
+        gmodel_entries[i].mesh0_entries = entries
     
     # byte alignment
     while True:
@@ -220,29 +228,29 @@ def build_part1(filepath, models):
     # they are represented with just 4 indices instead of 6
     # This doesn't even try to optimise the order but that shouldn't matter.
     buffer_blob = []
-    index_off = 0
-    for model in models:
-        for mesh in model:
-            index_offsets.append(index_off)
+    indices_total = 0
+    for i, model in enumerate(models):
+        for ii, mesh in enumerate(model):
+            gmodel_entries[i].mesh0_entries[ii].index_offset = indices_total
             buffer = []
-            index_count = 0
-            for i, tri in enumerate(mesh[1]):
+            gmodel_entries[i].mesh0_entries[ii].index_count = 0
+            for iii, tri in enumerate(mesh[1]):
 
                 A = tri[0]
                 B = tri[1]
                 C = tri[2]
 
-                if i == 0:
+                if iii == 0:
                     buffer.append(A)
                     buffer.append(B)
                     buffer.append(C)
-                    index_count += 3
+                    gmodel_entries[i].mesh0_entries[ii].index_count += 3
 
                 else:
                     # Best case, new tri with just one index
                     if buffer[-2] == A and buffer[-1] == B:
                         buffer.append(C)
-                        index_count += 1
+                        gmodel_entries[i].mesh0_entries[ii].index_count += 1
 
                     # Neutral case, new tri takes 3 indices  
                     elif buffer[-1] == A:
@@ -251,23 +259,23 @@ def build_part1(filepath, models):
                         buffer.append(A)
                         buffer.append(B)
                         buffer.append(C)
-                        index_count += 3
+                        gmodel_entries[i].mesh0_entries[ii].index_count += 3
 
-                    # Worst case, new tri takes 5 indices. It's probably rare enough to offset the cost, even unoptimized.
+                    # Worst case, new tri takes 5 indices. It's probably rare enough to offset the cost.
                     else:
                         buffer.append(buffer[-1]) # Make degen triangles
                         buffer.append(A) # Make degen triangles again
                         buffer.append(A)
                         buffer.append(B)
                         buffer.append(C)
-                        index_count += 5
+                        gmodel_entries[i].mesh0_entries[ii].index_count += 5
             
             for index in buffer:
                 buffer_blob.append(index)
 
-            index_counts.append(index_count)
-            index_off += index_count
-
+            #index_counts.append(index_count)
+            indices_total += gmodel_entries[i].mesh0_entries[ii].index_count
+            
     for index in buffer_blob:
         write_short(index, f, '<')
     
@@ -277,4 +285,4 @@ def build_part1(filepath, models):
             break
         write_byte(0, f)
     
-    return [vert_banks, index_offsets, vert_offsets, index_counts, materials, verts_total]
+    return gmodel_entries, indices_total, verts_total #[vert_banks, index_offsets, vert_offsets, index_counts, materials, verts_total]

@@ -409,109 +409,85 @@ def main(filepath, ImportMesh):
 
     # --- g_chunk models --- #
     OFF_GMODELS = f.tell()
-    gmodels = []
-    for i in range(g_chunk_modelcount):
-        gmodel = g_chunk_model()
 
+    gmodel_entries = []
+    for i in range(g_chunk_modelcount):
+        gmodel = g_model_entry()
+
+        check_x = False
         check_y = False
 
-        f.read(24)  # 6 floats, a box?
-        f.read(4)   # null?
-        f.read(4)   # always uint 1?
-        f.read(4)   # unk ff flag
-        if read_uint(f, '<') == 0xffffFFFF: check_y = True
+        gmodel.bbox = (
+            read_float(f, '<'), # x
+            read_float(f, '<'), # y
+            read_float(f, '<'), # z
+            read_float(f, '<'), # x
+            read_float(f, '<'), # y
+            read_float(f, '<'), # z
+        )
+        gmodel.unk0 = read_uint(f, '<')
+        gmodel.unk1 = read_uint(f, '<')
+        
+        if read_uint(f, '<') == 0: gmodel.mesh0_count = 0
+        else: check_x = True
+        if read_uint(f, '<') == 0: gmodel.y_count = 0
+        else: check_y = True
         SeekToNextRow(f)
         
-        # get x
-        read_ushort(f, '<')  # short
-        gmodel.xcount       = read_ushort(f, '<')
-        read_uint(f,'<')    # ff flag
-        gmodel.unkx         = read_uint(f, '<')
-        SeekToNextRow(f)
-
-        # get y
-        gmodel.ycount = 0
-        if check_y:
-            f.read(2)       # short
-            gmodel.ycount   = read_ushort(f, '<')
-            f.read(4)       # ff flag
-            gmodel.unky     = read_uint(f, '<')
+        if check_x:
+            gmodel.mesh0_unk0   = read_ushort(f, '<')
+            gmodel.mesh0_count  = read_ushort(f, '<')
+            gmodel.mesh0_unk1   = read_uint(f, '<') # ff flag
+            gmodel.mesh0_unk2   = read_uint(f, '<')
             SeekToNextRow(f)
 
-        gmodel.meshes0 = []
-        for _ in range(gmodel.xcount):
-            mesh = g_chunk_model_mesh0()
+        if check_y:
+            gmodel.y_unk0       = read_ushort(f, '<')
+            gmodel.y_count      = read_ushort(f, '<')
+            gmodel.y_unk1       = read_uint(f, '<') # ff flag
+            gmodel.y_unk2       = read_uint(f, '<')
+            SeekToNextRow(f)
 
+        gmodel.mesh0_entries = []
+        for _ in range(gmodel.mesh0_count):
+            mesh = g_model_mesh0_entry()
             mesh.vert_bank      = read_uint(f, '<')
             mesh.index_offset   = read_uint(f, '<')
             mesh.vert_offset    = read_uint(f, '<')
             mesh.index_count    = read_ushort(f, '<')
             mesh.mat            = read_ushort(f, '<')
+            gmodel.mesh0_entries.append(mesh)
 
-            gmodel.meshes0.append(mesh)
+        gmodel.y_entries = []
+        for _ in range(gmodel.y_count):
+            y = g_model_y_entry()
+            y.unk0 = read_uint(f, '<')
+            y.unk1 = read_uint(f, '<')
+            y.unk2 = read_uint(f, '<')
+            y.unk3 = read_ushort(f, '<')
+            y.mat = read_ushort(f, '<')
+            gmodel.y_entries.append(y)
 
-        for _ in range(gmodel.ycount):
-            f.read(12)        # null?
-            read_uint(f, '<') # no effect?
+        gmodel_entries.append(gmodel)
 
-        gmodels.append(gmodel)
+    OFF_GMODELS_END = f.tell()
 
-    tempmeshes = [
-        [
-            [
-                [
-                    (1,2,3,4,5),
-                    (1,2,3,4,5),
-                    (1,2,3,4,5),
-                    (1,2,3,4,5),
-                    (1,2,3,4,5),
-                ],
-                [
-                    (0,1,2),
-                    (1,2,3),
-                    (2,3,4),
-                    (3,4,5),
-                ],
-            ],
-            [
-                [
-                    (3,4,5,6,7),
-                    (3,4,5,6,7),
-                    (3,4,5,6,7),
-                    (3,4,5,6,7),
-                    (3,4,5,6,7),
-                    (3,4,5,6,7),
-                ],
-                [
-                    (0,1,2),
-                    (1,2,3),
-                    (3,4,5),
-                    (4,5,6),
-                ],
-            ]
-        ],
-    ]
-    
-    meshses = []
+
+    meshes = []
     for fname in os.listdir(export_dir):
         if fname.endswith(".obj"):
-            meshses.append(utils.modelhandler.import_obj(os.path.join(export_dir, fname)))
+            meshes.append(utils.modelhandler.import_obj(os.path.join(export_dir, fname)))
 
-
-    #testmodel = utils.modelhandler.import_obj("/home/jyl/Desktop/Rayman.obj")
-    #testmodel = utils.modelhandler.import_obj("/home/jyl/Desktop/untitled.obj")
-    #tempmeshes = []
-    #tempmeshes.append(testmodel)
     utils.g_chunker.split_part2(g_filepath, g_chunk_vsizes, g_chunk_vcounts, model0_list[0].indexCount)
-    gdata = utils.g_chunker.build_part1(g_filepath, meshses)
-
+    gmodel_entries, total_indices, total_verts = utils.g_chunker.build_part1(g_filepath, meshes, gmodel_entries)
 
 
     new_chunk_path = os.path.join(dirname, "new_" + basename)
     new_g_chunk_path = os.path.join(dirname, "new_" + g_basename)
 
-    shutil.copy(filepath, new_chunk_path)
-    new_chunk = open(new_chunk_path, 'r+b')
+    #shutil.copy(filepath, new_chunk_path)
+    new_chunk = open(new_chunk_path, 'w+b')
+    
     new_g_chunk = open(new_g_chunk_path, 'wb')
 
     part1 = open(g_filepath + ".part1", 'rb')
@@ -523,15 +499,11 @@ def main(filepath, ImportMesh):
     os.remove(g_filepath + ".part1")
     os.remove(g_filepath + ".part2")
 
-    total_indices = 0
-    for count in gdata[3]:
-        total_indices += count
-    total_verts = gdata[5]
-    print(total_indices, total_verts)
+    # --- New chunk pre-gmodel
+    f.seek(0)
+    new_chunk.write(f.read(OFF_GMODELS))
 
     new_chunk.seek(OFF_MODELHEADER)
-
-
     for i, mesh in enumerate(model0_list):
         new_chunk.read(2) # mesh.unknown0
         new_chunk.read(2) # mesh.header1count
@@ -549,10 +521,6 @@ def main(filepath, ImportMesh):
             # physmodel
             if mesh.unknown0 == 7:
                 pass
-                #mesh.unknown1 = read_uint(f, '<')
-                #mesh.vertCount = read_uint(f, '<')
-                #f.read(4)   # FF
-                #f.read(4)   # null
 
             # g_chunk model
             else:
@@ -573,40 +541,96 @@ def main(filepath, ImportMesh):
     SeekToNextRow(new_chunk)
 
     new_chunk.seek(OFF_GMODELS)
-    imesh = 0
-    for gmodel in gmodels:
 
-        check_y = False
+    # --- New chunk gmodel
 
-        new_chunk.read(40)
-        SeekToNextRow(new_chunk)
+    for gmodel in gmodel_entries:
+
+        for value in gmodel.bbox:
+            write_float(value, new_chunk, '<')
         
-        new_chunk.read(12)
-        SeekToNextRow(new_chunk)
-
-        if gmodel.ycount > 0:
-            new_chunk.read(12)
-            SeekToNextRow(new_chunk)
+        write_uint(gmodel.unk0, new_chunk, '<')
+        write_uint(gmodel.unk1, new_chunk, '<')
         
-        for i, mesh in enumerate(gmodel.meshes0):
-            print("patching entry in chunk...",imesh)
-            write_uint(0, new_chunk, '<')#mesh.vert_bank      = read_uint(f, '<')
-            write_uint(gdata[1][imesh], new_chunk, '<')#mesh.index_offset   = read_uint(f, '<')
-            write_uint(gdata[2][imesh], new_chunk, '<')#mesh.vert_offset    = read_uint(f, '<')
-            write_ushort(gdata[3][imesh], new_chunk, '<')#mesh.index_count    = read_ushort(f, '<')
-            write_ushort(gdata[4][imesh], new_chunk, '<')#mesh.mat            = read_ushort(f, '<')
-            imesh += 1
+        if gmodel.mesh0_count == 0: write_uint(0, new_chunk, '<')
+        else:                       write_uint(0xffffFFFF, new_chunk, '<')
 
-        for _ in range(gmodel.ycount):
-            new_chunk.read(16)        # null?
-            #read_uint(f, '<') # no effect?
+        if gmodel.y_count == 0: write_uint(0, new_chunk, '<')
+        else:                       write_uint(0xffffFFFF, new_chunk, '<')
 
-    # if not os.path.exists(export_dir): os.mkdir(export_dir)
+        WriteToNextRow(new_chunk)
+        
+        if gmodel.mesh0_count != 0:
+            write_ushort(gmodel.mesh0_unk0, new_chunk, '<')
+            write_ushort(gmodel.mesh0_count, new_chunk, '<')
+            write_uint(gmodel.mesh0_unk1, new_chunk, '<') # ff flag
+            write_uint(gmodel.mesh0_unk2, new_chunk, '<')
+            WriteToNextRow(new_chunk)
 
-    #export_obj_name = "/home/jyl/Desktop/Rayman_test.obj"
-    #export_obj_name = "/home/jyl/Desktop/cube.obj"
-    #print("exporting: " + export_name)
-    #utils.modelhandler.export_obj_v2(testmodel, export_obj_name, "")
+        if gmodel.y_count != 0:
+            write_ushort(gmodel.y_unk0, new_chunk, '<')
+            write_ushort(gmodel.y_count, new_chunk, '<')
+            write_uint(gmodel.y_unk1, new_chunk, '<') # ff flag
+            write_uint(gmodel.y_unk2, new_chunk, '<')
+            WriteToNextRow(new_chunk)
+
+        for mesh in gmodel.mesh0_entries:
+            write_uint(mesh.vert_bank, new_chunk, '<')
+            write_uint(mesh.index_offset, new_chunk, '<')
+            write_uint(mesh.vert_offset, new_chunk, '<')
+            write_ushort(mesh.index_count, new_chunk, '<')
+            write_ushort(mesh.mat, new_chunk, '<')
+
+        for y in gmodel.y_entries:
+            write_uint(y.unk0, new_chunk, '<')
+            write_uint(y.unk1, new_chunk, '<')
+            write_uint(y.unk2, new_chunk, '<')
+            write_ushort(y.unk3, new_chunk, '<')
+            write_ushort(y.mat, new_chunk, '<')
+
+
+    #new_chunk.close()
+#
+    #return
+
+    # --- New chunk post-gmodel
+    f.seek(OFF_GMODELS_END)
+    new_chunk.write(f.read())
+
+
+
+
+
+
+    
+
+    #new_chunk.seek(OFF_GMODELS)
+    #imesh = 0
+    #for gmodel in gmodel_entries:
+#
+    #    check_y = False
+#
+    #    new_chunk.read(40)
+    #    SeekToNextRow(new_chunk)
+    #    
+    #    new_chunk.read(12)
+    #    SeekToNextRow(new_chunk)
+#
+    #    if gmodel.y_count > 0:
+    #        new_chunk.read(12)
+    #        SeekToNextRow(new_chunk)
+    #    
+    #    for i, mesh in enumerate(gmodel.mesh0_entries):
+    #        print("patching entry in chunk...",imesh)
+    #        write_uint(0, new_chunk, '<')#mesh.vert_bank      = read_uint(f, '<')
+    #        write_uint(gdata[1][imesh], new_chunk, '<')#mesh.index_offset   = read_uint(f, '<')
+    #        write_uint(gdata[2][imesh], new_chunk, '<')#mesh.vert_offset    = read_uint(f, '<')
+    #        write_ushort(gdata[3][imesh], new_chunk, '<')#mesh.index_count    = read_ushort(f, '<')
+    #        write_ushort(gdata[4][imesh], new_chunk, '<')#mesh.mat            = read_ushort(f, '<')
+    #        imesh += 1
+#
+    #    for _ in range(gmodel.y_count):
+    #        new_chunk.read(16)        # null?
 
     timer = time.time() - timer
     print("end, ", hex(new_chunk.tell()), "\nfinished in ",timer, " seconds")

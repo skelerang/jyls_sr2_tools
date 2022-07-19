@@ -400,13 +400,20 @@ def main(filepath, ImportMesh):
         f.read(4)   # no visible changes
 
     # --- g_chunk models --- #
-    gmodels = []
+    gmodel_entries = []
     for i in range(g_chunk_modelcount):
-        gmodel = g_chunk_model()
-
+        gmodel = g_model_entry()
         check_y = False
 
-        f.read(24)  # 6 floats, a box?
+        gmodel.bbox = (
+            read_float(f, '<'), # x
+            read_float(f, '<'), # y
+            read_float(f, '<'), # z
+            read_float(f, '<'), # x
+            read_float(f, '<'), # y
+            read_float(f, '<'), # z
+        )
+        
         f.read(4)   # null?
         f.read(4)   # always uint 1?
         f.read(4)   # unk ff flag
@@ -415,37 +422,37 @@ def main(filepath, ImportMesh):
         
         # get x
         read_ushort(f, '<')  # short
-        gmodel.xcount       = read_ushort(f, '<')
+        gmodel.mesh0_count       = read_ushort(f, '<')
         read_uint(f,'<')    # ff flag
-        gmodel.unkx         = read_uint(f, '<')
+        gmodel.mesh0_unk1         = read_uint(f, '<')
         SeekToNextRow(f)
 
         # get y
-        gmodel.ycount = 0
+        gmodel.y_count = 0
         if check_y:
             f.read(2)       # short
-            gmodel.ycount   = read_ushort(f, '<')
+            gmodel.y_count   = read_ushort(f, '<')
             f.read(4)       # ff flag
-            gmodel.unky     = read_uint(f, '<')
+            gmodel.y_unk1     = read_uint(f, '<')
             SeekToNextRow(f)
 
-        gmodel.meshes0 = []
-        for _ in range(gmodel.xcount):
-            mesh = g_chunk_model_mesh0()
+        gmodel.mesh0_entries = []
+        for _ in range(gmodel.mesh0_count):
+            mesh = g_model_mesh0_entry()
 
             mesh.vert_bank      = read_uint(f, '<')
             mesh.index_offset   = read_uint(f, '<')
             mesh.vert_offset    = read_uint(f, '<')
             mesh.index_count    = read_ushort(f, '<')
             mesh.mat            = read_ushort(f, '<')
-            gmodel.meshes0.append(mesh)
+            gmodel.mesh0_entries.append(mesh)
 
-        for _ in range(gmodel.ycount):
+        for _ in range(gmodel.y_count):
             f.read(12)        # null?
             read_ushort(f, '<') # no effect?
             mat = read_ushort(f, '<') # no effect?
 
-        gmodels.append(gmodel)
+        gmodel_entries.append(gmodel)
             
     if not os.path.exists(export_dir): os.mkdir(export_dir)
 
