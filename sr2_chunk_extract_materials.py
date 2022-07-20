@@ -476,6 +476,7 @@ def main(filepath, ImportMesh):
 
     timer = time.time() - timer
     print("end, ", hex(f.tell()), "\nfinished in ",timer, " seconds")
+    f.close()
     return {'FINISHED'}
 
 import_models = False

@@ -43,4 +43,6 @@ def main(filepath):
     for i, tex in enumerate(chunk_texlist):
         out.write(str(i) + ": " + tex + "\n")
 
+    f.close()
+    out.close()
 main(sys.argv[1])

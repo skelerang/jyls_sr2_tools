@@ -297,5 +297,5 @@ def build_part1(filepath, models, gmodel_entries):
         if f.tell() & 0xfffffff0 == f.tell():
             break
         write_byte(0, f)
-    
+    f.close()
     return gmodel_entries, indices_total, verts_total #[vert_banks, index_offsets, vert_offsets, index_counts, materials, verts_total]

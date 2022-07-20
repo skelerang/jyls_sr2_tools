@@ -496,6 +496,7 @@ def main(filepath, ImportMesh):
     new_g_chunk.write(part2.read())
     part1.close()
     part2.close()
+    new_g_chunk.close()
     os.remove(g_filepath + ".part1")
     os.remove(g_filepath + ".part2")
 
