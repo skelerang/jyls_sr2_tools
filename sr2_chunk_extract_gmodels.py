@@ -477,7 +477,7 @@ def main(filepath, ImportMesh):
     export_mtl_path = os.path.join(export_dir, export_mtl_name)
 
     for mesh in models:
-        export_obj_name = os.path.join(export_dir, "g_mdl_" + str(temp_i) + ".obj")
+        export_obj_name = os.path.join(export_dir, "g_mdl_" + str(temp_i).zfill(4) + ".obj")
         #print("exporting: " + export_name)
         utils.modelhandler.export_obj(mesh, export_obj_name, export_mtl_name)
         temp_i +=1

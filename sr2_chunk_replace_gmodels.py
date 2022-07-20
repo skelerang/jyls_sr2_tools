@@ -474,7 +474,7 @@ def main(filepath, ImportMesh):
 
 
     meshes = []
-    for fname in os.listdir(export_dir):
+    for fname in sorted(os.listdir(export_dir)):
         if fname.endswith(".obj"):
             meshes.append(utils.modelhandler.import_obj(os.path.join(export_dir, fname)))
 

@@ -45,8 +45,8 @@ def gchunk2mesh(filepath, vsizes, vcounts, icount, gmodels):
                     y = read_float(f, '<')
                     z = read_float(f, '<')
                     f.read(4)   # often 7FFF7F7F or such 
-                    u = read_ushort(f, '<') / 256
-                    v = read_ushort(f, '<') / 256
+                    u = read_short(f, '<') / 256
+                    v = read_short(f, '<') / 256
                     vert_blob.append((x, y, z, u, v))
                 vert_banks.append(vert_blob)
                 SeekToNextRow(f)
@@ -58,8 +58,8 @@ def gchunk2mesh(filepath, vsizes, vcounts, icount, gmodels):
                     z = read_float(f, '<')
                     f.read(4)   # often 7FFF7F7F or such 
                     f.read(4)
-                    u = read_ushort(f, '<') / 256
-                    v = read_ushort(f, '<') / 256
+                    u = read_short(f, '<') / 256
+                    v = read_short(f, '<') / 256
                     vert_blob.append((x, y, z, u, v))
                 vert_banks.append(vert_blob)
                 SeekToNextRow(f)
@@ -72,8 +72,8 @@ def gchunk2mesh(filepath, vsizes, vcounts, icount, gmodels):
                     f.read(4)   # often 7FFF7F7F or such 
                     f.read(4)   # often 7F7F00FF or such 
                     f.read(4)
-                    u = read_ushort(f, '<') / 256
-                    v = read_ushort(f, '<') / 256
+                    u = read_short(f, '<') / 256
+                    v = read_short(f, '<') / 256
                     vert_blob.append((x, y, z, u, v))
                 vert_banks.append(vert_blob)
                 SeekToNextRow(f)
@@ -121,9 +121,15 @@ def gchunk2mesh(filepath, vsizes, vcounts, icount, gmodels):
             
             # --- Faces
             for ind_i in range(gmesh.index_count-2):
-                i0 = index_blob[gmesh.index_offset + ind_i]+1
-                i1 = index_blob[gmesh.index_offset + ind_i+1]+1
-                i2 = index_blob[gmesh.index_offset + ind_i+2]+1
+                # Odd faces are flipped
+                if (ind_i % 2) == 0:
+                    i0 = index_blob[gmesh.index_offset + ind_i]+1
+                    i1 = index_blob[gmesh.index_offset + ind_i+1]+1
+                    i2 = index_blob[gmesh.index_offset + ind_i+2]+1
+                else:
+                    i2 = index_blob[gmesh.index_offset + ind_i]+1
+                    i1 = index_blob[gmesh.index_offset + ind_i+1]+1
+                    i0 = index_blob[gmesh.index_offset + ind_i+2]+1
 
                 mesh[2].append((i0,i1,i2))
 
@@ -197,6 +203,7 @@ def build_part1(filepath, models, gmodel_entries):
 
     # --- Vert Blob --- #
     for i, model in enumerate(models):
+        print("gchunk p1 mdl", i, "/", len(models)-1)
         entries = []
         for ii, mesh in enumerate(model):
             entry = g_model_mesh0_entry()
@@ -206,8 +213,8 @@ def build_part1(filepath, models, gmodel_entries):
                 write_float(vert[1], f, '<')    # y
                 write_float(vert[2], f, '<')    # z
                 write_uint(0x7FFF7F7F, f)       # dunno what this is.
-                write_ushort(int(vert[3] * 256), f, '<')     # u
-                write_ushort(int(vert[4] * 256), f, '<')     # v
+                write_short(int(vert[3] * 256), f, '<')     # u
+                write_short(int(vert[4] * 256), f, '<')     # v
             entry.vert_offset = verts_total
             entry.vert_count = len(mesh[0])
             entry.mat = mesh[2]
@@ -236,9 +243,15 @@ def build_part1(filepath, models, gmodel_entries):
             gmodel_entries[i].mesh0_entries[ii].index_count = 0
             for iii, tri in enumerate(mesh[1]):
 
-                A = tri[0]
-                B = tri[1]
-                C = tri[2]
+                # Odd faces are flipped
+                if (iii % 2) == 0:
+                    A = tri[0]
+                    B = tri[1]
+                    C = tri[2]
+                else:
+                    A = tri[2]
+                    B = tri[1]
+                    C = tri[0]
 
                 if iii == 0:
                     buffer.append(A)
