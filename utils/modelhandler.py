@@ -47,11 +47,11 @@ def import_obj(filepath):
                     # --- Vert tuples --- #
                     #
                     # It is assumed that v and vt match; in wavefront pos and uv are
-                    # by loop and not by vertex so they don't match, uv's will break.
+                    # by loop and not by vertex so if they don't match, uv's will break.
                     #
                     # Verts are written to each buffer every time a face mentions them.
                     # Maybe dumb, but this ensures that every v used by a face is stored
-                    # and not one unused. So verts may be written multiple times,
+                    # and not one is unused. So verts may be written multiple times,
                     # overwriting the prev and potentially pulling a different uv.
 
                     temp_vbuffers[currentmesh][A[0]] = (

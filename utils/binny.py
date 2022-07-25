@@ -5,9 +5,16 @@ import struct
 
 #TODO: write missing funcs
 def read_byte(file_object, endian = '>'):
-    data = struct.unpack(endian+'B', file_object.read(1))[0]
+    data = struct.unpack(endian+'b', file_object.read(1))[0]
     return data
 def write_byte(n, file_object, endian = '>'):
+    data = struct.pack(endian+'b', n)
+    file_object.write(data)
+
+def read_ubyte(file_object, endian = '>'):
+    data = struct.unpack(endian+'B', file_object.read(1))[0]
+    return data
+def write_ubyte(n, file_object, endian = '>'):
     data = struct.pack(endian+'B', n)
     file_object.write(data)
 
@@ -71,4 +78,4 @@ def WriteToNextRow(f):    # Byte alignment fill zeroes
     while True:
         if f.tell() & 0xfffffff0 == f.tell():
             break        
-        write_byte(0, f)
+        write_ubyte(0, f)

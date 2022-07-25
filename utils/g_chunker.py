@@ -19,7 +19,7 @@ if __name__ == '__main__':
 # Not blobs. Separate models
 # Vsize varies with each model. No clue where to get anything.
 
-def gchunk2mesh(filepath, vsizes, vcounts, icount, gmodels):
+def gchunk2mesh(filepath, unk2bcounts, uvcounts, vsizes, vcounts, icount, gmodels):
 
     f = open(filepath, 'r+b')
 
@@ -35,65 +35,29 @@ def gchunk2mesh(filepath, vsizes, vcounts, icount, gmodels):
     for i in range(vblob_count):
         vert_blob = []
         print(i, hex(f.tell()))
-        # size ranges at least from 20B to 36B
-        # vsizes[i]:
 
-        match vsizes[i]:
-            case 20:
-                for _ in range(vcounts[i]):
-                    x = read_float(f, '<')
-                    y = read_float(f, '<')
-                    z = read_float(f, '<')
-                    f.read(4)   # often 7FFF7F7F or such 
-                    u = read_short(f, '<') / 256
-                    v = read_short(f, '<') / 256
-                    vert_blob.append((x, y, z, u, v))
-                vert_banks.append(vert_blob)
-                SeekToNextRow(f)
+        for _ in range(vcounts[i]):
+            x = read_float(f, '<')
+            y = read_float(f, '<')
+            z = read_float(f, '<')
 
-            case 24:
-                for _ in range(vcounts[i]):
-                    x = read_float(f, '<')
-                    y = read_float(f, '<')
-                    z = read_float(f, '<')
-                    f.read(4)   # often 7FFF7F7F or such 
-                    f.read(4)
-                    u = read_short(f, '<') / 256
-                    v = read_short(f, '<') / 256
-                    vert_blob.append((x, y, z, u, v))
-                vert_banks.append(vert_blob)
-                SeekToNextRow(f)
+            for _ in range(unk2bcounts[i]):
+                f.read(2)
+            
+            uvs = []
+            for _ in range(uvcounts[i]):
+                u = read_short(f, '<') / 256
+                v = read_short(f, '<') / 256
+                uvs.append((u, v))
+            if uvcounts[i] == 0: uvs.append((0, 0)) # It's *possible* to have no UVs
+            
+            u = uvs[0][0]   # for now we just ignore the extras.
+            v = uvs[0][1]
 
-            case 28:
-                for _ in range(vcounts[i]):
-                    x = read_float(f, '<')
-                    y = read_float(f, '<')
-                    z = read_float(f, '<')
-                    f.read(4)   # often 7FFF7F7F or such 
-                    f.read(4)   # often 7F7F00FF or such 
-                    f.read(4)
-                    u = read_short(f, '<') / 256
-                    v = read_short(f, '<') / 256
-                    vert_blob.append((x, y, z, u, v))
-                vert_banks.append(vert_blob)
-                SeekToNextRow(f)
-                
-            case _:
-                for _ in range(vcounts[i]):
+            vert_blob.append((x, y, z, u, v))
+        vert_banks.append(vert_blob)
+        SeekToNextRow(f)
 
-                    bytes_left = vsizes[i]
-
-                    # regardless of type the vert begins with position.
-                    x = read_float(f, '<')
-                    y = read_float(f, '<')
-                    z = read_float(f, '<')
-                    bytes_left -= 12
-
-                    f.read(bytes_left)
-                    vert_blob.append((x, y, z, 0, 0))
-
-                vert_banks.append(vert_blob)
-                SeekToNextRow(f)
 
     # --- Indices --- #
     for _ in range(icount):
@@ -228,7 +192,7 @@ def build_part1(filepath, models, gmodel_entries):
     while True:
         if f.tell() & 0xfffffff0 == f.tell():
             break
-        write_byte(0, f)
+        write_ubyte(0, f)
 
     # --- Index buffer blob --- #
     # Index buffer is compressed: if successive tris share an edge,
@@ -296,6 +260,6 @@ def build_part1(filepath, models, gmodel_entries):
     while True:
         if f.tell() & 0xfffffff0 == f.tell():
             break
-        write_byte(0, f)
+        write_ubyte(0, f)
     f.close()
     return gmodel_entries, indices_total, verts_total #[vert_banks, index_offsets, vert_offsets, index_counts, materials, verts_total]

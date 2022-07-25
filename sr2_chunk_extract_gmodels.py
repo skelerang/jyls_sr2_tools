@@ -253,7 +253,7 @@ def main(filepath, ImportMesh):
     for _ in range(chunk_pc_Model0Count):
         mesh = chunk_pc_model0_mesh()
 
-        mesh.unknown0 = read_ushort(f, '<')      # Can only be either 7 or 0?? If 0, skip the mesh
+        mesh.unknown0 = read_ushort(f, '<')      # Can only be either 7 or 0? 7 means physmodel, 0 means gmodel.
         mesh.header1count = read_ushort(f, '<')
         mesh.indexCount = read_uint(f, '<')
         f.read(8)   # FF bytes
@@ -261,7 +261,8 @@ def main(filepath, ImportMesh):
         model0_list.append(mesh)
 
     
-    g_chunk_vtypes = []
+    g_chunk_unk2bcounts = []
+    g_chunk_uvcounts = []
     g_chunk_vsizes = []
     g_chunk_vcounts = []
 
@@ -280,7 +281,8 @@ def main(filepath, ImportMesh):
             else:
                 # vtypes: This somehow tells what types of data the vert contains?
                 # null for physmodels (which obviously don't have any extra data like uv's)
-                g_chunk_vtypes.append(read_ushort(f, '<'))
+                g_chunk_unk2bcounts.append(read_ubyte(f, '<')) # unk 2B data. Have seen 2 or 4. Breaks shading.
+                g_chunk_uvcounts.append(read_ubyte(f, '<')) # models can have multiple sets of uv coords.
                 g_chunk_vsizes.append(read_ushort(f, '<'))  # vert length
                 g_chunk_vcounts.append(read_uint(f, '<'))   # vert count
                 f.read(4)   # FF
@@ -464,7 +466,7 @@ def main(filepath, ImportMesh):
         gmodel_entries.append(gmodel)
 
     # pull models from g_chunk
-    models = utils.g_chunker.gchunk2mesh(g_chunk_filepath, g_chunk_vsizes, g_chunk_vcounts, model0_list[0].indexCount, gmodel_entries)
+    models = utils.g_chunker.gchunk2mesh(g_chunk_filepath, g_chunk_unk2bcounts, g_chunk_uvcounts, g_chunk_vsizes, g_chunk_vcounts, model0_list[0].indexCount, gmodel_entries)
 
     temp_i = 0
 
